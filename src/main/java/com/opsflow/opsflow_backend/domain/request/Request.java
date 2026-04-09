@@ -25,20 +25,35 @@ public class Request {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    // ✅ Constructor requerido por JPA
+    // Constructor requerido por JPA
     protected Request() {}
 
-    // ✅ Constructor de dominio
+    // Constructor de dominio
     public Request(String title, String description) {
         this.title = title;
         this.description = description;
-        this.status = RequestStatus.PENDING;
+        this.status = RequestStatus.DRAFT;
         this.createdAt = Instant.now();
     }
 
     // =====================
     // Lógica de dominio
     // =====================
+
+
+    public void submit() {
+        if (status != RequestStatus.DRAFT) {
+            throw new IllegalStateException("Only DRAFT requests can be submitted");
+        }
+        this.status = RequestStatus.PENDING;
+    }
+
+    public void validate() {
+        if (status != RequestStatus.PENDING) {
+            throw new IllegalStateException("Only PENDING requests can be validated");
+        }
+        this.status = RequestStatus.VALIDATED;
+    }
 
     public void approve() {
         if (this.status != RequestStatus.PENDING) {
@@ -48,8 +63,10 @@ public class Request {
     }
 
     public void reject() {
-        if (this.status != RequestStatus.PENDING) {
-            throw new IllegalStateException("Only PENDING requests can be rejected");
+        if (this.status != RequestStatus.VALIDATED) {
+            throw new IllegalStateException(
+                    "Only VALIDATED requests can be rejected"
+            );
         }
         this.status = RequestStatus.REJECTED;
     }
@@ -76,5 +93,23 @@ public class Request {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public void cancel() {
+        if (status == RequestStatus.APPROVED || status == RequestStatus.REJECTED) {
+            throw new IllegalStateException(
+                    "Cannot cancel a request that is already finished"
+            );
+        }
+        this.status = RequestStatus.CANCELLED;
+    }
+
+    public void retry() {
+        if (status != RequestStatus.REJECTED) {
+            throw new IllegalStateException(
+                    "Only REJECTED requests can be retried"
+            );
+        }
+        this.status = RequestStatus.PENDING;
     }
 }

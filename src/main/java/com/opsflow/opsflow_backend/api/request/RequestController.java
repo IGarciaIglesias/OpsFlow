@@ -7,6 +7,8 @@ import com.opsflow.opsflow_backend.domain.request.event.RequestApprovedEvent;
 import com.opsflow.opsflow_backend.domain.request.event.RequestRejectedEvent;
 import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestHistoryRepository;
 import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestRepository;
+import com.opsflow.opsflow_backend.messaging.validation.RequestValidationMessage;
+import com.opsflow.opsflow_backend.messaging.validation.RequestValidationConsumer;
 import jakarta.validation.Valid;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
@@ -22,15 +24,18 @@ public class RequestController {
     private final RequestRepository requestRepository;
     private final RequestHistoryRepository historyRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final RequestValidationConsumer validationConsumer;
 
     public RequestController(
             RequestRepository requestRepository,
             RequestHistoryRepository historyRepository,
-            ApplicationEventPublisher eventPublisher
+            ApplicationEventPublisher eventPublisher,
+            RequestValidationConsumer validationConsumer
     ) {
         this.requestRepository = requestRepository;
         this.historyRepository = historyRepository;
         this.eventPublisher = eventPublisher;
+        this.validationConsumer = validationConsumer;
     }
 
     // Crear solicitud
@@ -119,5 +124,76 @@ public class RequestController {
                 .stream()
                 .map(RequestResponseDto.RequestHistoryDto::from)
                 .toList();
+    }
+
+    @PostMapping("/{id}/submit")
+    public ResponseEntity<?> submit(@PathVariable Long id) {
+        return requestRepository.findById(id)
+                .map(request -> {
+                    RequestStatus from = request.getStatus();
+                    request.submit();
+                    Request saved = requestRepository.save(request);
+                    historyRepository.save(
+                            new RequestHistory(
+                                    saved,
+                                    from,
+                                    saved.getStatus()
+                            )
+                    );
+                    // ✅ Simulación de publicación
+                    RequestValidationMessage message =
+                            RequestValidationMessage.of(saved.getId());
+                    validationConsumer.consume(message);
+                    System.out.println(
+                            "📤 Published validation message: " + message
+                    );
+                    return ResponseEntity.ok().build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/validate")
+    public ResponseEntity<?> validate(@PathVariable Long id) {
+        return requestRepository.findById(id)
+                .map(request -> {
+                    RequestStatus from = request.getStatus();
+                    request.validate();
+                    Request saved = requestRepository.save(request);
+                    historyRepository.save(
+                            new RequestHistory(saved, from, saved.getStatus())
+                    );
+                    return ResponseEntity.ok().build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<?> cancel(@PathVariable Long id) {
+        return requestRepository.findById(id)
+                .map(request -> {
+                    RequestStatus from = request.getStatus();
+                    request.cancel();
+                    Request saved = requestRepository.save(request);
+                    historyRepository.save(
+                            new RequestHistory(saved, from, saved.getStatus())
+                    );
+                    return ResponseEntity.ok().build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/retry")
+    public ResponseEntity<?> retry(@PathVariable Long id) {
+        return requestRepository.findById(id)
+                .map(request -> {
+                    RequestStatus from = request.getStatus();
+                    request.retry();
+                    Request saved = requestRepository.save(request);
+                    historyRepository.save(
+                            new RequestHistory(saved, from, saved.getStatus())
+                    );
+                    return ResponseEntity.ok().build();
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }

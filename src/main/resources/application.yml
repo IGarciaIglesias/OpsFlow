@@ -4,6 +4,13 @@ spring:
     username: opsflow
     password: opsflow
 
+  rabbitmq:
+     host: localhost
+     port: 5672
+     username: guest
+     password: guest
+
+
   jpa:
     hibernate:
       ddl-auto: none
