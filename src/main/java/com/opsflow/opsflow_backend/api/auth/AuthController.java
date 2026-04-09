@@ -3,6 +3,7 @@ package com.opsflow.opsflow_backend.api.auth;
 import com.opsflow.opsflow_backend.security.jwt.JwtService;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,7 +20,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest request) {
+    public LoginResponse login(@RequestBody LoginRequest request) {
 
         Authentication authentication =
                 authenticationManager.authenticate(
@@ -29,6 +30,9 @@ public class AuthController {
                         )
                 );
 
-        return jwtService.generateToken(authentication.getName());
+        String token = jwtService.generateToken(
+                (UserDetails) authentication.getPrincipal()
+        );
+        return new LoginResponse(token);
     }
 }

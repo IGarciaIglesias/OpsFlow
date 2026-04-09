@@ -5,9 +5,21 @@ import com.opsflow.opsflow_backend.domain.request.RequestHistory;
 import com.opsflow.opsflow_backend.domain.request.RequestStatus;
 import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestHistoryRepository;
 import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestRepository;
+import com.opsflow.opsflow_backend.messaging.config.RabbitMQConfig;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Consumer de validación técnica asíncrona.
+ *
+ * Flujo:
+ * DRAFT → VALIDATED   (controller)
+ * VALIDATED → PENDING (Rabbit)
+ *
+ * NO hay validación KO
+ * NO hay lógica de negocio
+ */
 @Component
 public class RequestValidationConsumer {
 
@@ -22,32 +34,35 @@ public class RequestValidationConsumer {
         this.historyRepository = historyRepository;
     }
 
+    @RabbitListener(queues = RabbitMQConfig.REQUEST_VALIDATION_QUEUE)
     @Transactional
     public void consume(RequestValidationMessage message) {
 
-        System.out.println("📥 Processing validation message: " + message);
+        Request request = requestRepository.findById(message.requestId())
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "Request not found: " + message.requestId()
+                        )
+                );
 
-        requestRepository.findById(message.requestId())
-                .ifPresent(request -> {
+        // ✅ Solo VALIDATED
+        if (request.getStatus() != RequestStatus.VALIDATED) {
+            return;
+        }
 
-                    RequestStatus from = request.getStatus();
+        RequestStatus from = request.getStatus();
 
-                    // Simulación de validación OK
-                    request.validate();
+        // ✅ VALIDATED → PENDING (SIEMPRE)
+        request.validate();
 
-                    Request saved = requestRepository.save(request);
+        Request saved = requestRepository.save(request);
 
-                    historyRepository.save(
-                            new RequestHistory(
-                                    saved,
-                                    from,
-                                    saved.getStatus()
-                            )
-                    );
+        historyRepository.save(
+                new RequestHistory(saved, from, saved.getStatus())
+        );
 
-                    System.out.println(
-                            "Request validated: " + saved.getId()
-                    );
-                });
+        System.out.println(
+                "[Rabbit] Request " + saved.getId() + " → PENDING"
+        );
     }
 }
