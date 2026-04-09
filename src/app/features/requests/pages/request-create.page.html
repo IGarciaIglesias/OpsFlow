@@ -1,0 +1,30 @@
+<h1>Crear solicitud</h1>
+
+<form (ngSubmit)="create()">
+  <div>
+    <label>Título</label>
+    <input
+      type="text"
+      [(ngModel)]="title"
+      name="title"
+      required
+    />
+  </div>
+
+  <div>
+    <label>Descripción</label>
+    <textarea
+      [(ngModel)]="description"
+      name="description"
+      required>
+    </textarea>
+  </div>
+
+  <button type="submit" [disabled]="loading">
+    Crear
+  </button>
+
+  <button type="button" (click)="cancel()">
+    Cancelar
+  </button>
+</form>

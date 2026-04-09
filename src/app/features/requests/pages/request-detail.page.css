@@ -1,0 +1,33 @@
+.detail-page {
+  padding: 1.5rem;
+}
+
+.card {
+  background: var(--card-bg);
+  padding: 1.25rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.card p {
+  margin: 0.3rem 0;
+}
+
+.history {
+  list-style: none;
+  padding: 0;
+}
+
+.history li {
+  padding: 0.4rem 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.back-btn {
+  margin-top: 1rem;
+  background: var(--neutral);
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius);
+}

@@ -1,0 +1,23 @@
+<app-header></app-header>
+
+<div class="page-container"> 
+  <h1>Detalle de solicitud</h1>
+    <div class="card"></div> 
+        <div *ngIf="request"> 
+        <p><strong>ID:</strong> {{ request.id }}</p>
+        <p><strong>Título:</strong> {{ request.title }}</p>
+        <p><strong>Descripción:</strong> {{ request.description }}</p>
+        <p><strong>Estado:</strong> {{ request.status }}</p>
+        </div> 
+
+        <h2>Histórico</h2>
+
+        <ul>
+        <li *ngFor="let h of history">
+            {{ h.fromStatus }} → {{ h.toStatus }} ({{ h.changedAt }})
+        </li>
+        </ul>
+    </div> 
+
+    <button (click)="back()">Volver</button>    
+

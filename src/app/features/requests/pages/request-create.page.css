@@ -1,0 +1,47 @@
+.form-container {
+  max-width: 600px;
+  margin: 1.5rem auto;
+  background: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+}
+
+.form-container h1 {
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+}

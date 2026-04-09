@@ -1,0 +1,30 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-title {
+  font-weight: 600;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.role {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-right: 1rem;
+}
+
+.app-header button {
+  border: none;
+  background: var(--danger);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+}

@@ -1,0 +1,62 @@
+
+<app-header></app-header>
+
+<div class="page-container">
+  <div class="page-header">
+    <h1>Requests</h1>
+
+    <button
+      *ngIf="canCreate()"
+      class="btn primary"
+      (click)="goToCreate()">
+      Crear solicitud
+    </button>
+  </div>
+
+
+<hr />
+
+<!-- Opcional: indicador de carga -->
+<p *ngIf="loading">Cargando...</p>
+
+    <table *ngIf="requests.length > 0; else empty">
+      <tr *ngFor="let r of requests">
+        <td>
+          <a [routerLink]="['/requests', r.id]">
+            {{ r.id }}
+          </a>
+        </td>
+        <td>
+          <span class="status" [class]="r.status">
+            {{ r.status }}
+          </span>
+        </td>
+        <!-- Botones por estado + rol -->
+        <td class="actions">
+      <button
+        *ngIf="r.status === 'PENDING' && canApprove()"
+        class="btn success"
+        (click)="approve(r.id)">
+        Aprobar
+      </button>
+
+      <button
+        *ngIf="r.status === 'PENDING' && canApprove()"
+        class="btn danger"
+        (click)="reject(r.id)">
+        Rechazar
+      </button>
+
+      <button
+        *ngIf="r.status === 'REJECTED' && canCreate()"
+        class="btn warning"
+        (click)="retry(r.id)">
+        Reintentar
+      </button>
+    </td>
+  </tr>
+</table>
+
+<ng-template #empty>
+  <p>No hay solicitudes todavía.</p>
+</ng-template>
