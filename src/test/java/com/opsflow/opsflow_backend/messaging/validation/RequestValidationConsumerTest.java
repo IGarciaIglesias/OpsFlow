@@ -29,8 +29,7 @@ class RequestValidationConsumerTest {
 
     @Test
     void whenRequestIsNotValidated_consumerDoesNothing() {
-        Request r = new Request("ok", "desc ok");
-        // r está en DRAFT
+        Request r = new Request("ok", "desc ok"); // DRAFT
         when(requestRepository.findById(1L)).thenReturn(Optional.of(r));
 
         consumer.consume(RequestValidationMessage.of(1L));
@@ -50,7 +49,6 @@ class RequestValidationConsumerTest {
         consumer.consume(RequestValidationMessage.of(1L));
 
         assertEquals(RequestStatus.PENDING, r.getStatus());
-
         verify(requestRepository).save(r);
 
         ArgumentCaptor<RequestHistory> captor = ArgumentCaptor.forClass(RequestHistory.class);
@@ -64,17 +62,16 @@ class RequestValidationConsumerTest {
 
     @Test
     void whenValidatedButInvalid_movesToRejectedAndSavesHistory() {
-        // Ejemplo inválido: title < 3 o description < 5 (ajusta según tu regla)
-        Request r = new Request("x", "y");
+        Request r = new Request("x", "y"); // inválido para la regla (title<3, desc<5)
         r.submit(); // VALIDATED
 
         when(requestRepository.findById(2L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        consumer.consume(RequestValidationMessage.of(1L));
+        // ✅ AQUÍ estaba el bug: antes enviabas of(1L)
+        consumer.consume(RequestValidationMessage.of(2L));
 
         assertEquals(RequestStatus.REJECTED, r.getStatus());
-
         verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
     }

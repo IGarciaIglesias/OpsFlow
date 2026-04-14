@@ -24,8 +24,10 @@ public class Request {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    // Constructor requerido por JPA
     protected Request() {}
 
+    // Constructor de dominio
     public Request(String title, String description) {
         this.title = title;
         this.description = description;
@@ -37,7 +39,7 @@ public class Request {
     // Lógica de dominio
     // =====================
 
-    /** DRAFT -> VALIDATED (se lanza al crear o al enviar) */
+    /** DRAFT -> VALIDATED */
     public void submit() {
         if (status != RequestStatus.DRAFT) {
             throw new IllegalStateException("Only DRAFT requests can be submitted");
@@ -45,7 +47,7 @@ public class Request {
         this.status = RequestStatus.VALIDATED;
     }
 
-    /** VALIDATED -> PENDING (pasa a revisión humana) */
+    /** VALIDATED -> PENDING */
     public void validate() {
         if (status != RequestStatus.VALIDATED) {
             throw new IllegalStateException("Only VALIDATED requests can be validated");
@@ -58,6 +60,7 @@ public class Request {
         if (status != RequestStatus.VALIDATED) {
             throw new IllegalStateException("Only VALIDATED requests can fail validation");
         }
+        // ✅ antes estaba en DRAFT: eso contradice el flujo de Rabbit
         this.status = RequestStatus.REJECTED;
     }
 
@@ -77,7 +80,7 @@ public class Request {
         this.status = RequestStatus.REJECTED;
     }
 
-    /** REJECTED -> DRAFT (reintento manual) */
+    /** REJECTED -> DRAFT */
     public void retry() {
         if (status != RequestStatus.REJECTED) {
             throw new IllegalStateException("Only REJECTED requests can be retried");

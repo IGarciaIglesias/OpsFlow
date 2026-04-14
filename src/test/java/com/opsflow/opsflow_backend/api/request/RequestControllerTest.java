@@ -6,6 +6,7 @@ import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestHis
 import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestRepository;
 import com.opsflow.opsflow_backend.messaging.config.RabbitMQConfig;
 import com.opsflow.opsflow_backend.messaging.validation.RequestValidationMessage;
+import com.opsflow.opsflow_backend.security.jwt.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationEventPublisher;
@@ -13,9 +14,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.Optional;
@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RequestController.class)
+@AutoConfigureMockMvc(addFilters = false) // ✅ evita que Spring Security te devuelva 401 en estos tests
 class RequestControllerTest {
 
     @Autowired
@@ -43,11 +44,14 @@ class RequestControllerTest {
     @MockitoBean
     RabbitTemplate rabbitTemplate;
 
+    // ✅ clave: evita que el contexto intente construir el filtro real (y pida JwtService)
+    @MockitoBean
+    JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Test
     void create_shouldSetValidatedAndSendRabbitMessage() throws Exception {
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> {
             Request r = inv.getArgument(0);
-            // simulamos que JPA asigna id
             var f = Request.class.getDeclaredField("id");
             f.setAccessible(true);
             f.set(r, 10L);
@@ -70,7 +74,7 @@ class RequestControllerTest {
     @Test
     void approve_shouldWorkOnlyFromPending() throws Exception {
         Request r = new Request("t", "d");
-        r.submit();   // VALIDATED
+        r.submit();
         r.validate(); // PENDING
 
         when(requestRepository.findById(5L)).thenReturn(Optional.of(r));
