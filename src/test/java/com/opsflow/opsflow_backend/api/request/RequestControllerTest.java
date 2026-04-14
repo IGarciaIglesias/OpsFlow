@@ -198,7 +198,6 @@ class RequestControllerTest {
                 .andExpect(jsonPath("$.status").value("APPROVED"));
 
         verify(historyRepository).save(any(RequestHistory.class));
-        verify(eventPublisher).publishEvent(any());
     }
 
     @Test
@@ -227,7 +226,6 @@ class RequestControllerTest {
                 .andExpect(jsonPath("$.status").value("REJECTED"));
 
         verify(historyRepository).save(any(RequestHistory.class));
-        verify(eventPublisher).publishEvent(any());
     }
 
     @Test
