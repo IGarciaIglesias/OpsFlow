@@ -158,6 +158,7 @@ public class RequestController {
                 .map(request -> {
                     RequestStatus from = request.getStatus();
                     request.retry();
+                    request.retry();
                     Request saved = requestRepository.save(request);
 
                     historyRepository.save(
