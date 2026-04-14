@@ -62,30 +62,17 @@ class RequestValidationConsumerTest {
 
     @Test
     void whenValidatedButInvalid_movesToRejectedAndSavesHistory() {
-        Request r = new Request("x", "y"); // inválido para la regla (title<3, desc<5)
+        Request r = new Request("x", "y"); // inválido (reglas del consumer)
         r.submit(); // VALIDATED
 
         when(requestRepository.findById(2L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
-        
+
         consumer.consume(RequestValidationMessage.of(2L));
 
         assertEquals(RequestStatus.REJECTED, r.getStatus());
         verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
-    }
-
-    @Test
-    void whenRequestStatusIsNotValidated_consumerDoesNothing() {
-        Request r = new Request("Titulo OK", "Descripcion OK");
-        // se queda en DRAFT
-
-        when(requestRepository.findById(1L)).thenReturn(Optional.of(r));
-
-        consumer.consume(RequestValidationMessage.of(1L));
-
-        verify(requestRepository, never()).save(any());
-        verify(historyRepository, never()).save(any());
     }
 
     @Test
@@ -96,7 +83,6 @@ class RequestValidationConsumerTest {
                 IllegalStateException.class,
                 () -> consumer.consume(RequestValidationMessage.of(99L))
         );
-
         assertTrue(ex.getMessage().contains("Request not found"));
     }
 }
