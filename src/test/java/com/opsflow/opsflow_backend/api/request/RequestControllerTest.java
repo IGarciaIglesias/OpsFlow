@@ -102,4 +102,23 @@ class RequestControllerTest {
 
         verify(historyRepository).save(any(RequestHistory.class));
     }
+
+    @Test
+    void approve_whenRequestNotFound_shouldReturn404() throws Exception {
+        when(requestRepository.findById(1L)).thenReturn(Optional.empty());
+
+        mvc.perform(post("/requests/1/approve"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void approve_whenNotPending_shouldReturn400() throws Exception {
+        Request r = new Request("t", "desc ok");
+        r.submit(); // VALIDATED, no PENDING
+
+        when(requestRepository.findById(2L)).thenReturn(Optional.of(r));
+
+        mvc.perform(post("/requests/2/approve"))
+                .andExpect(status().isBadRequest());
+    }
 }

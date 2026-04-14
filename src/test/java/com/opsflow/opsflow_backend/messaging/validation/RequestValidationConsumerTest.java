@@ -67,12 +67,36 @@ class RequestValidationConsumerTest {
 
         when(requestRepository.findById(2L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        // ✅ AQUÍ estaba el bug: antes enviabas of(1L)
+        
         consumer.consume(RequestValidationMessage.of(2L));
 
         assertEquals(RequestStatus.REJECTED, r.getStatus());
         verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
+    }
+
+    @Test
+    void whenRequestStatusIsNotValidated_consumerDoesNothing() {
+        Request r = new Request("Titulo OK", "Descripcion OK");
+        // se queda en DRAFT
+
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(r));
+
+        consumer.consume(RequestValidationMessage.of(1L));
+
+        verify(requestRepository, never()).save(any());
+        verify(historyRepository, never()).save(any());
+    }
+
+    @Test
+    void whenRequestDoesNotExist_throwException() {
+        when(requestRepository.findById(99L)).thenReturn(Optional.empty());
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> consumer.consume(RequestValidationMessage.of(99L))
+        );
+
+        assertTrue(ex.getMessage().contains("Request not found"));
     }
 }

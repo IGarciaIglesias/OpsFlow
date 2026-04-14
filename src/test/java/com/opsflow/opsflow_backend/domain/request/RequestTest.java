@@ -109,4 +109,26 @@ class RequestTest {
         IllegalStateException ex = assertThrows(IllegalStateException.class, r::retry);
         assertTrue(ex.getMessage().contains("Only REJECTED"));
     }
+
+    @Test
+    void approve_whenNotPending_shouldFail() {
+        Request r = new Request("t", "desc ok");
+        r.submit(); // VALIDATED
+
+        assertThrows(IllegalStateException.class, r::approve);
+    }
+
+    @Test
+    void reject_whenNotPending_shouldFail() {
+        Request r = new Request("t", "desc ok");
+
+        assertThrows(IllegalStateException.class, r::reject);
+    }
+
+    @Test
+    void retry_whenNotRejected_shouldFail() {
+        Request r = new Request("t", "desc ok");
+
+        assertThrows(IllegalStateException.class, r::retry);
+    }
 }
