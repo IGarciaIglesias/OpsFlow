@@ -22,7 +22,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -63,7 +62,7 @@ class RequestControllerTest {
         }
     }
 
-    // (Puedes dejar este helper aunque ya no sea necesario para retry)
+    // ✅ Nuevo helper: forzar estado para tests de controller
     private static void setStatus(Request r, RequestStatus status) {
         try {
             Field f = Request.class.getDeclaredField("status");
@@ -91,7 +90,7 @@ class RequestControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/requests/10"))
                 .andExpect(jsonPath("$.id").value(10))
-                // En tu ejecución real, el create está devolviendo VALIDATED
+                // ✅ En tu implementación actual, la respuesta viene como VALIDATED
                 .andExpect(jsonPath("$.status").value("VALIDATED"));
     }
 
@@ -154,7 +153,7 @@ class RequestControllerTest {
         verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
 
-        // Evita el ambiguous method call capturando el mensaje
+        // ✅ Evita el "ambiguous method call" capturando el mensaje
         ArgumentCaptor<RequestValidationMessage> captor =
                 ArgumentCaptor.forClass(RequestValidationMessage.class);
 
@@ -211,6 +210,7 @@ class RequestControllerTest {
                 .andExpect(jsonPath("$.status").value("APPROVED"));
 
         verify(historyRepository).save(any(RequestHistory.class));
+        // (puedes verificar eventPublisher si quieres, pero no es obligatorio para pasar)
     }
 
     @Test
@@ -254,21 +254,11 @@ class RequestControllerTest {
     // ---------------------------
     @Test
     void retry_whenRejected_shouldReturn200() throws Exception {
-        // ✅ Usamos un mock para controlar el estado que ve el controller
-        Request r = mock(Request.class);
+        Request r = new Request("t", "desc ok");
+        setId(r, 9L);
 
-        AtomicReference<RequestStatus> status = new AtomicReference<>(RequestStatus.REJECTED);
-
-        when(r.getStatus()).thenAnswer(inv -> status.get());
-
-        // Simulamos exactamente la lógica de dominio: REJECTED -> DRAFT
-        doAnswer(inv -> {
-            if (status.get() != RequestStatus.REJECTED) {
-                throw new IllegalStateException("Only REJECTED requests can be retried");
-            }
-            status.set(RequestStatus.DRAFT);
-            return null;
-        }).when(r).retry();
+        // ✅ retry() SOLO permite REJECTED. Forzamos el estado.
+        setStatus(r, RequestStatus.REJECTED);
 
         when(requestRepository.findById(9L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -276,7 +266,6 @@ class RequestControllerTest {
         mvc.perform(post("/requests/9/retry"))
                 .andExpect(status().isOk());
 
-        verify(r).retry();
         verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
     }
