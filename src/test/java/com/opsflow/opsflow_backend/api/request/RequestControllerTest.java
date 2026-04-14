@@ -1,0 +1,101 @@
+package com.opsflow.opsflow_backend.api.request;
+
+import com.opsflow.opsflow_backend.domain.request.Request;
+import com.opsflow.opsflow_backend.domain.request.RequestHistory;
+import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestHistoryRepository;
+import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestRepository;
+import com.opsflow.opsflow_backend.messaging.config.RabbitMQConfig;
+import com.opsflow.opsflow_backend.messaging.validation.RequestValidationMessage;
+import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(RequestController.class)
+class RequestControllerTest {
+
+    @Autowired
+    MockMvc mvc;
+
+    @MockitoBean
+    RequestRepository requestRepository;
+
+    @MockitoBean
+    RequestHistoryRepository historyRepository;
+
+    @MockitoBean
+    ApplicationEventPublisher eventPublisher;
+
+    @MockitoBean
+    RabbitTemplate rabbitTemplate;
+
+    @Test
+    void create_shouldSetValidatedAndSendRabbitMessage() throws Exception {
+        when(requestRepository.save(any(Request.class))).thenAnswer(inv -> {
+            Request r = inv.getArgument(0);
+            // simulamos que JPA asigna id
+            var f = Request.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(r, 10L);
+            return r;
+        });
+
+        mvc.perform(post("/requests")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Titulo OK\",\"description\":\"Descripcion OK\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("VALIDATED"));
+
+        verify(rabbitTemplate).convertAndSend(
+                eq(RabbitMQConfig.REQUEST_VALIDATION_QUEUE),
+                any(RequestValidationMessage.class)
+        );
+        verify(historyRepository).save(any(RequestHistory.class));
+    }
+
+    @Test
+    void approve_shouldWorkOnlyFromPending() throws Exception {
+        Request r = new Request("t", "d");
+        r.submit();   // VALIDATED
+        r.validate(); // PENDING
+
+        when(requestRepository.findById(5L)).thenReturn(Optional.of(r));
+        when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        mvc.perform(post("/requests/5/approve"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"));
+
+        verify(historyRepository).save(any(RequestHistory.class));
+    }
+
+    @Test
+    void reject_shouldWorkOnlyFromPending() throws Exception {
+        Request r = new Request("t", "d");
+        r.submit();
+        r.validate(); // PENDING
+
+        when(requestRepository.findById(6L)).thenReturn(Optional.of(r));
+        when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        mvc.perform(post("/requests/6/reject"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REJECTED"));
+
+        verify(historyRepository).save(any(RequestHistory.class));
+    }
+}

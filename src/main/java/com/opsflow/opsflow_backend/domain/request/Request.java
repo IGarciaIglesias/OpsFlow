@@ -33,9 +33,11 @@ public class Request {
         this.createdAt = Instant.now();
     }
 
-    // ===== Dominio =====
+    // =====================
+    // Lógica de dominio
+    // =====================
 
-    /** DRAFT → VALIDATED */
+    /** DRAFT -> VALIDATED (se lanza al crear o al enviar) */
     public void submit() {
         if (status != RequestStatus.DRAFT) {
             throw new IllegalStateException("Only DRAFT requests can be submitted");
@@ -43,7 +45,7 @@ public class Request {
         this.status = RequestStatus.VALIDATED;
     }
 
-    /** VALIDATED → PENDING */
+    /** VALIDATED -> PENDING (pasa a revisión humana) */
     public void validate() {
         if (status != RequestStatus.VALIDATED) {
             throw new IllegalStateException("Only VALIDATED requests can be validated");
@@ -51,23 +53,31 @@ public class Request {
         this.status = RequestStatus.PENDING;
     }
 
-    /** PENDING → APPROVED */
+    /** VALIDATED -> REJECTED (rechazo automático por validación técnica) */
+    public void validationFailed() {
+        if (status != RequestStatus.VALIDATED) {
+            throw new IllegalStateException("Only VALIDATED requests can fail validation");
+        }
+        this.status = RequestStatus.REJECTED;
+    }
+
+    /** PENDING -> APPROVED */
     public void approve() {
-        if (status != RequestStatus.PENDING) {
+        if (this.status != RequestStatus.PENDING) {
             throw new IllegalStateException("Only PENDING requests can be approved");
         }
         this.status = RequestStatus.APPROVED;
     }
 
-    /** PENDING → REJECTED */
+    /** PENDING -> REJECTED (rechazo humano) */
     public void reject() {
-        if (status != RequestStatus.PENDING) {
+        if (this.status != RequestStatus.PENDING) {
             throw new IllegalStateException("Only PENDING requests can be rejected");
         }
         this.status = RequestStatus.REJECTED;
     }
 
-    //** RETRY
+    /** REJECTED -> DRAFT (reintento manual) */
     public void retry() {
         if (status != RequestStatus.REJECTED) {
             throw new IllegalStateException("Only REJECTED requests can be retried");
@@ -75,7 +85,9 @@ public class Request {
         this.status = RequestStatus.DRAFT;
     }
 
-    // ===== Getters =====
+    // =====================
+    // Getters
+    // =====================
 
     public Long getId() { return id; }
     public String getTitle() { return title; }
