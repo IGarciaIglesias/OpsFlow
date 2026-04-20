@@ -1,17 +1,46 @@
 <app-header></app-header>
 
-<div class="page-container">
-  <div class="page-header">
-    <h1>Dashboard</h1>
-    <p>Resumen operativo de solicitudes</p>
-  </div>
+<div class="dashboard-page">
+  <div class="page-container">
+    <header class="page-header">
+      <div class="page-header__eyebrow">OpsFlow Analytics</div>
+      <h1>Dashboard</h1>
+      <p>Resumen operativo de solicitudes y distribución actual por estado.</p>
+    </header>
 
-  <p *ngIf="loading" class="loading">Cargando métricas...</p>
+    <section *ngIf="loading" class="loading-state">
+      <div class="loading-grid">
+        <div class="loading-card"></div>
+        <div class="loading-card"></div>
+        <div class="loading-card"></div>
+        <div class="loading-card"></div>
+      </div>
+      <p class="loading-text">Cargando métricas...</p>
+    </section>
 
-  <div class="kpi-grid" *ngIf="!loading && cards.length > 0">
-    <div class="kpi-card" *ngFor="let card of cards" [ngClass]="card.className">
-      <span class="kpi-label">{{ card.label }}</span>
-      <strong class="kpi-value">{{ card.value }}</strong>
-    </div>
+    <section *ngIf="!loading && cards.length > 0" class="dashboard-content">
+      <div class="kpi-grid">
+        <article
+          class="kpi-card"
+          *ngFor="let card of cards"
+          [ngClass]="card.className">
+
+          <div class="kpi-card__top">
+            <span class="kpi-dot"></span>
+            <span class="kpi-label">{{ card.label }}</span>
+          </div>
+
+          <div class="kpi-card__body">
+            <strong class="kpi-value">{{ card.value }}</strong>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section *ngIf="!loading && cards.length === 0" class="empty-state">
+      <div class="empty-state__icon">📊</div>
+      <h2>No hay métricas disponibles</h2>
+      <p>Todavía no hay datos suficientes para mostrar el resumen operativo.</p>
+    </section>
   </div>
 </div>

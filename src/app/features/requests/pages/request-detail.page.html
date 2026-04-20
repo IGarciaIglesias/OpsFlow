@@ -1,126 +1,174 @@
 <app-header></app-header>
 
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <button class="btn secondary" (click)="back()">← Volver</button>
-      <h1>Solicitud {{ request.code ?? request.id }}</h1>
+<div class="detail-page">
+  <div class="detail-top">
+    <button class="back-btn" type="button" (click)="back()">
+      ← Volver al listado
+    </button>
+
+    <div class="detail-header" *ngIf="!loading && request">
+      <div class="id-badge">#{{ request.code ?? request.id }}</div>
+      <h1>{{ request.title }}</h1>
+
+      <div class="status-section">
+        <span class="status-badge large" [ngClass]="request.status.toLowerCase()">
+          {{ request.status }}
+        </span>
+
+        <span class="status-date">
+          {{ request.createdAt | date:'short' }}
+        </span>
+      </div>
     </div>
   </div>
 
-  <div *ngIf="loading" class="loading">Cargando...</div>
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando detalles de la solicitud...</p>
+  </div>
 
-  <div *ngIf="!loading && request" class="request-detail">
-
-    <!-- Información principal -->
+  <div *ngIf="!loading && request" class="detail-content">
     <section class="info-section">
+      <div class="info-card">
+        <div class="info-label">Descripción</div>
+        <div class="info-value">{{ request.description }}</div>
+      </div>
+
       <div class="info-grid">
         <div class="info-card">
-          <h2>Título</h2>
-          <p>{{ request.title }}</p>
+          <div class="info-label">Creador</div>
+          <div class="info-value">{{ request.creator || 'No disponible' }}</div>
         </div>
 
         <div class="info-card">
-          <h2>Estado</h2>
-          <span class="status large" [class]="request.status">
-            {{ request.status }}
-          </span>
+          <div class="info-label">Asignado</div>
+          <div class="info-value">{{ request.assignee || 'Sin asignar' }}</div>
         </div>
 
         <div class="info-card">
-          <h2>Descripción</h2>
-          <p>{{ request.description }}</p>
-        </div>
-
-        <div class="info-card" *ngIf="request.priority">
-          <h2>Prioridad</h2>
-          <span class="priority">{{ request.priority }}</span>
-        </div>
-
-        <div class="info-card" *ngIf="request.type">
-          <h2>Tipo</h2>
-          <p>{{ request.type }}</p>
+          <div class="info-label">Prioridad</div>
+          <div class="info-value">
+            <span class="priority-badge" *ngIf="request.priority; else noPriority">
+              {{ request.priority }}
+            </span>
+            <ng-template #noPriority>
+              <span class="empty-text">Sin especificar</span>
+            </ng-template>
+          </div>
         </div>
 
         <div class="info-card">
-          <h2>Creado</h2>
-          <p>{{ request.createdAt | date:'short' }}</p>
+          <div class="info-label">Tipo</div>
+          <div class="info-value">
+            <span class="type-badge" *ngIf="request.type; else noType">
+              {{ request.type }}
+            </span>
+            <ng-template #noType>
+              <span class="empty-text">Sin especificar</span>
+            </ng-template>
+          </div>
         </div>
 
-        <div class="info-card" *ngIf="request.creator">
-          <h2>Creador</h2>
-          <p>{{ request.creator }}</p>
-        </div>
-
-        <div class="info-card" *ngIf="request.assignee">
-          <h2>Asignado</h2>
-          <p>{{ request.assignee }}</p>
+        <div class="info-card">
+          <div class="info-label">Fecha de creación</div>
+          <div class="info-value">{{ request.createdAt | date:'medium' }}</div>
         </div>
       </div>
     </section>
 
-    <!-- Acciones disponibles -->
     <section class="actions-section" *ngIf="!actionLoading">
       <h2>Acciones disponibles</h2>
+
       <div class="actions-grid">
         <button
           *ngIf="canSubmit()"
-          class="btn warning"
+          class="btn btn-warning"
+          type="button"
           (click)="submit()">
+          <span class="btn-icon">📤</span>
           Enviar a validación
         </button>
 
         <button
           *ngIf="canApprove()"
-          class="btn success"
+          class="btn btn-success"
+          type="button"
           (click)="approve()">
+          <span class="btn-icon">✅</span>
           Aprobar
         </button>
 
         <button
           *ngIf="canReject()"
-          class="btn danger"
+          class="btn btn-danger"
+          type="button"
           (click)="reject()">
+          <span class="btn-icon">❌</span>
           Rechazar
         </button>
 
         <button
           *ngIf="canRetry()"
-          class="btn warning"
+          class="btn btn-warning"
+          type="button"
           (click)="retry()">
+          <span class="btn-icon">🔄</span>
           Reintentar
         </button>
 
         <button
           *ngIf="canCancel()"
-          class="btn secondary"
+          class="btn btn-secondary"
+          type="button"
           (click)="cancel()">
+          <span class="btn-icon">⏹️</span>
           Cancelar
         </button>
       </div>
     </section>
 
-    <!-- Histórico de estados -->
     <section class="history-section">
-      <h2>Histórico ({{ history.length }})</h2>
-      <div class="history-list" *ngIf="history.length > 0; else noHistory">
-        <div *ngFor="let item of history" class="history-item">
-          <div class="history-statuses">
-            <span class="status small">{{ item.fromStatus }}</span>
-            <span class="arrow">→</span>
-            <span class="status small active">{{ item.toStatus }}</span>
-          </div>
-          <div class="history-meta">
-            <span>{{ item.changedAt | date:'short' }}</span>
-            <span *ngIf="item.changedBy">por {{ item.changedBy }}</span>
-          </div>
-          <div *ngIf="item.comment" class="history-comment">
-            {{ item.comment }}
+      <h2>Histórico de estados ({{ history.length }})</h2>
+
+      <div *ngIf="history.length > 0; else noHistory" class="timeline">
+        <div *ngFor="let item of history; trackBy: trackHistory" class="timeline-item">
+          <div class="timeline-line"></div>
+          <div class="timeline-dot" [ngClass]="item.toStatus.toLowerCase()"></div>
+
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="status-badge" [ngClass]="item.toStatus.toLowerCase()">
+                {{ item.toStatus }}
+              </span>
+
+              <span class="timeline-date">
+                {{ item.changedAt | date:'short' }}
+              </span>
+            </div>
+
+            <div class="timeline-prev" *ngIf="item.fromStatus">
+              <span class="prev-status" [ngClass]="item.fromStatus.toLowerCase()">
+                {{ item.fromStatus }}
+              </span>
+              <span class="arrow">→</span>
+            </div>
+
+            <div class="timeline-meta" *ngIf="item.changedBy">
+              Por {{ item.changedBy }}
+            </div>
+
+            <div class="timeline-comment" *ngIf="item.comment">
+              {{ item.comment }}
+            </div>
           </div>
         </div>
       </div>
+
       <ng-template #noHistory>
-        <p>No hay cambios de estado aún.</p>
+        <div class="empty-timeline">
+          <div class="empty-icon">📝</div>
+          <p>No hay cambios de estado registrados aún.</p>
+        </div>
       </ng-template>
     </section>
   </div>

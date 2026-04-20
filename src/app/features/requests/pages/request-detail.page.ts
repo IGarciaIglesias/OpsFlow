@@ -106,6 +106,10 @@ export class RequestDetailPage implements OnInit {
       });
   }
 
+  trackHistory(index: number, item: any): string | number {
+    return item.id ?? item.changedAt ?? index;
+  }
+
   canSubmit(): boolean {
     return ['ADMIN', 'MANAGER', 'OPERATOR'].includes(this.role ?? '')
       && this.request?.status === 'DRAFT';

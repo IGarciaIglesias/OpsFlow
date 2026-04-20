@@ -1,126 +1,168 @@
 <app-header></app-header>
 
-<div class="page-container">
-  <div class="page-header">
-    <h1>Requests</h1>
-
-    <button
-      *ngIf="canCreate()"
-      class="btn primary"
-      (click)="goToCreate()">
-      Crear solicitud
-    </button>
-  </div>
-
-  <div class="filters-bar">
-    <div class="filter-group">
-      <label for="status">Estado</label>
-      <select
-        id="status"
-        [value]="selectedStatus"
-        (change)="onStatusChange($any($event.target).value)">
-        <option value="">Todos</option>
-        <option *ngFor="let status of availableStatuses" [value]="status">
-          {{ status }}
-        </option>
-      </select>
+<div class="page-shell">
+  <section class="page-top">
+    <div>
+      <p class="eyebrow">OpsFlow Manager</p>
+      <h1>Solicitudes</h1>
+      <p class="page-subtitle">
+        Consulta el estado de las requests, filtra por workflow y ejecuta acciones rápidas.
+      </p>
     </div>
 
     <button
-      class="btn secondary"
+      *ngIf="canCreate()"
+      class="btn btn-primary"
       type="button"
-      (click)="clearFilters()"
-      [disabled]="!selectedStatus">
-      Limpiar filtro
+      (click)="goToCreate()">
+      Crear solicitud
     </button>
-  </div>
+  </section>
 
-  <hr />
+  <section class="toolbar-card">
+    <div class="toolbar-left">
+      <div class="filter-group">
+        <label for="status">Estado</label>
+        <select
+          id="status"
+          [value]="selectedStatus"
+          (change)="onStatusChange($any($event.target).value)">
+          <option value="">Todos</option>
+          <option *ngFor="let status of availableStatuses" [value]="status">
+            {{ status }}
+          </option>
+        </select>
+      </div>
+    </div>
 
-  <p *ngIf="loading">Cargando...</p>
+    <div class="toolbar-right">
+      <button
+        class="btn btn-secondary"
+        type="button"
+        (click)="clearFilters()"
+        [disabled]="!selectedStatus">
+        Limpiar filtro
+      </button>
+    </div>
+  </section>
 
-  <table *ngIf="requests.length > 0; else empty">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Estado</th>
-        <th>Título</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
+  <section class="content-card">
+    <div class="table-header">
+      <div>
+        <h2>Listado</h2>
+        <p>{{ totalElements || requests.length }} solicitudes encontradas</p>
+      </div>
+    </div>
 
-    <tbody>
-      <tr *ngFor="let r of requests">
-        <td>
-          <a [routerLink]="['/requests', r.id]">
-            {{ r.id }}
-          </a>
-        </td>
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando solicitudes...</p>
+    </div>
 
-        <td>
-          <span class="status" [class]="r.status">
-            {{ r.status }}
-          </span>
-        </td>
+    <ng-container *ngIf="!loading">
+      <div *ngIf="requests.length > 0; else empty" class="table-wrapper">
+        <table class="requests-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Estado</th>
+              <th>Título</th>
+              <th class="actions-col">Acciones</th>
+            </tr>
+          </thead>
 
-        <td>{{ r.title }}</td>
+          <tbody>
+            <tr *ngFor="let r of requests">
+              <td>
+                <a class="request-link" [routerLink]="['/requests', r.id]">
+                  #{{ r.id }}
+                </a>
+              </td>
 
-        <td class="actions">
-          <button
-            *ngIf="r.status === 'DRAFT'"
-            class="btn warning"
-            (click)="submit(r.id)">
-            Enviar
-          </button>
+              <td>
+                <span class="status-badge" [ngClass]="r.status.toLowerCase()">
+                  {{ r.status }}
+                </span>
+              </td>
 
-          <button
-            *ngIf="r.status === 'VALIDATED' && canApprove()"
-            class="btn success"
-            (click)="approve(r.id)">
-            Aprobar
-          </button>
+              <td>
+                <div class="title-cell">
+                  <span class="title-text">{{ r.title }}</span>
+                </div>
+              </td>
 
-          <button
-            *ngIf="r.status === 'PENDING_VALIDATION' || r.status === 'VALIDATED'"
-            class="btn danger"
-            (click)="reject(r.id)">
-            Rechazar
-          </button>
+              <td class="actions">
+                <button
+                  *ngIf="r.status === 'DRAFT'"
+                  class="btn btn-warning"
+                  type="button"
+                  (click)="submit(r.id)">
+                  Enviar
+                </button>
 
-          <button
-            *ngIf="r.status === 'REJECTED' || r.status === 'FAILED'"
-            class="btn warning"
-            (click)="retry(r.id)">
-            Reintentar
-          </button>
+                <button
+                  *ngIf="r.status === 'VALIDATED' && canApprove()"
+                  class="btn btn-success"
+                  type="button"
+                  (click)="approve(r.id)">
+                  Aprobar
+                </button>
 
-          <button
-            *ngIf="r.status !== 'COMPLETED' && r.status !== 'CANCELLED' && canApprove()"
-            class="btn secondary"
-            (click)="cancel(r.id)">
-            Cancelar
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+                <button
+                  *ngIf="r.status === 'PENDING_VALIDATION' || r.status === 'VALIDATED'"
+                  class="btn btn-danger"
+                  type="button"
+                  (click)="reject(r.id)">
+                  Rechazar
+                </button>
 
-  <ng-template #empty>
-    <p>No hay solicitudes para el filtro seleccionado.</p>
-  </ng-template>
+                <button
+                  *ngIf="r.status === 'REJECTED' || r.status === 'FAILED'"
+                  class="btn btn-warning"
+                  type="button"
+                  (click)="retry(r.id)">
+                  Reintentar
+                </button>
 
-  <div class="pagination" *ngIf="totalPages > 1">
+                <button
+                  *ngIf="r.status !== 'COMPLETED' && r.status !== 'CANCELLED' && canApprove()"
+                  class="btn btn-secondary"
+                  type="button"
+                  (click)="cancel(r.id)">
+                  Cancelar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #empty>
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <h3>No hay solicitudes</h3>
+          <p>No se han encontrado resultados para el filtro seleccionado.</p>
+        </div>
+      </ng-template>
+    </ng-container>
+  </section>
+
+  <div class="pagination-card" *ngIf="totalPages > 1">
     <button
-      class="btn secondary"
+      class="btn btn-secondary"
+      type="button"
       [disabled]="page === 0"
       (click)="page = page - 1; reload()">
       Anterior
     </button>
 
-    <span>Página {{ page + 1 }} de {{ totalPages }}</span>
+    <span class="pagination-info">
+      Página {{ page + 1 }} de {{ totalPages }}
+    </span>
 
     <button
-      class="btn secondary"
+      class="btn btn-secondary"
+      type="button"
       [disabled]="page + 1 >= totalPages"
       (click)="page = page + 1; reload()">
       Siguiente
