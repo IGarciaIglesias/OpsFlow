@@ -16,7 +16,6 @@ public class RabbitMQConfig {
     public static final String REQUEST_EXECUTION_QUEUE = "request.execution";
     public static final String REQUEST_NOTIFICATIONS_QUEUE = "request.notifications";
 
-    // Cola principal con DLQ
     @Bean
     public Queue requestValidationQueue() {
         return QueueBuilder.durable(REQUEST_VALIDATION_QUEUE)
@@ -25,10 +24,19 @@ public class RabbitMQConfig {
                 .build();
     }
 
-    // Cola de muertos
     @Bean
     public Queue requestValidationDlq() {
-        return new Queue(REQUEST_VALIDATION_DLQ, true);
+        return QueueBuilder.durable(REQUEST_VALIDATION_DLQ).build();
+    }
+
+    @Bean
+    public Queue requestExecutionQueue() {
+        return QueueBuilder.durable(REQUEST_EXECUTION_QUEUE).build();
+    }
+
+    @Bean
+    public Queue requestNotificationsQueue() {
+        return QueueBuilder.durable(REQUEST_NOTIFICATIONS_QUEUE).build();
     }
 
     @Bean
@@ -44,15 +52,5 @@ public class RabbitMQConfig {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(messageConverter);
         return template;
-    }
-
-    @Bean
-    public Queue requestExecutionQueue() {
-        return QueueBuilder.durable(REQUEST_EXECUTION_QUEUE).build();
-    }
-
-    @Bean
-    public Queue requestNotificationsQueue() {
-        return QueueBuilder.durable(REQUEST_NOTIFICATIONS_QUEUE).build();
     }
 }

@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/requests")
@@ -46,9 +47,7 @@ public class RequestController {
     }
 
     @PostMapping
-    public ResponseEntity<RequestResponseDto> create(
-            @Valid @RequestBody CreateRequestDto dto
-    ) {
+    public ResponseEntity<RequestResponseDto> create(@Valid @RequestBody CreateRequestDto dto) {
         Request request = new Request(dto.title(), dto.description());
         Request saved = requestRepository.save(request);
 
@@ -84,15 +83,9 @@ public class RequestController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
-        Page<RequestResponseDto> result;
-
-        if (status != null) {
-            result = requestRepository.findByStatus(status, pageable)
-                    .map(RequestResponseDto::from);
-        } else {
-            result = requestRepository.findAll(pageable)
-                    .map(RequestResponseDto::from);
-        }
+        Page<RequestResponseDto> result = (status != null)
+                ? requestRepository.findByStatus(status, pageable).map(RequestResponseDto::from)
+                : requestRepository.findAll(pageable).map(RequestResponseDto::from);
 
         return ResponseEntity.ok(PageResponseDto.from(result));
     }
@@ -120,20 +113,21 @@ public class RequestController {
                     }
 
                     RequestStatus from = request.getStatus();
-                    request.submit();
+                    request.submitForValidation(); // usa aquí el nombre real de tu dominio
                     Request saved = requestRepository.save(request);
 
-                    historyRepository.save(
-                            new RequestHistory(saved, from, saved.getStatus())
-                    );
+                    historyRepository.save(new RequestHistory(saved, from, saved.getStatus()));
 
                     rabbitTemplate.convertAndSend(
                             RabbitMQConfig.REQUEST_VALIDATION_QUEUE,
-                            RequestValidationMessage.of(saved.getId())
+                            RequestValidationMessage.of(
+                                    saved.getId(),
+                                    UUID.randomUUID().toString(),
+                                    UUID.randomUUID().toString()
+                            )
                     );
 
-                    return ResponseEntity.accepted()
-                            .body(RequestResponseDto.from(saved));
+                    return ResponseEntity.accepted().body(RequestResponseDto.from(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -146,15 +140,16 @@ public class RequestController {
                     request.approve();
                     Request saved = requestRepository.save(request);
 
-                    historyRepository.save(
-                            new RequestHistory(saved, from, saved.getStatus())
-                    );
-
+                    historyRepository.save(new RequestHistory(saved, from, saved.getStatus()));
                     eventPublisher.publishEvent(new RequestApprovedEvent(saved));
 
                     rabbitTemplate.convertAndSend(
                             RabbitMQConfig.REQUEST_EXECUTION_QUEUE,
-                            RequestExecutionMessage.of(saved.getId())
+                            RequestExecutionMessage.of(
+                                    saved.getId(),
+                                    UUID.randomUUID().toString(),
+                                    UUID.randomUUID().toString()
+                            )
                     );
 
                     return ResponseEntity.ok(RequestResponseDto.from(saved));
@@ -170,10 +165,7 @@ public class RequestController {
                     request.reject();
                     Request saved = requestRepository.save(request);
 
-                    historyRepository.save(
-                            new RequestHistory(saved, from, saved.getStatus())
-                    );
-
+                    historyRepository.save(new RequestHistory(saved, from, saved.getStatus()));
                     eventPublisher.publishEvent(new RequestRejectedEvent(saved));
 
                     return ResponseEntity.ok(RequestResponseDto.from(saved));
@@ -189,9 +181,7 @@ public class RequestController {
                     request.cancel();
                     Request saved = requestRepository.save(request);
 
-                    historyRepository.save(
-                            new RequestHistory(saved, from, saved.getStatus())
-                    );
+                    historyRepository.save(new RequestHistory(saved, from, saved.getStatus()));
 
                     return ResponseEntity.ok(RequestResponseDto.from(saved));
                 })
@@ -206,9 +196,7 @@ public class RequestController {
                     request.retry();
                     Request saved = requestRepository.save(request);
 
-                    historyRepository.save(
-                            new RequestHistory(saved, from, saved.getStatus())
-                    );
+                    historyRepository.save(new RequestHistory(saved, from, saved.getStatus()));
 
                     return ResponseEntity.ok(RequestResponseDto.from(saved));
                 })
