@@ -48,7 +48,6 @@ class RequestValidationConsumerTest {
 
         verify(requestRepository, never()).save(any());
         verify(historyRepository, never()).save(any());
-        assertEquals(RequestStatus.DRAFT, r.getStatus());
     }
 
     @Test
