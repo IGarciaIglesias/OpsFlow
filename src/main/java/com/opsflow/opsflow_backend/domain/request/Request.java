@@ -1,6 +1,9 @@
 package com.opsflow.opsflow_backend.domain.request;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 import java.time.Instant;
 
 @Entity
@@ -86,6 +89,44 @@ public class Request {
             throw new IllegalStateException("Only REJECTED requests can be retried");
         }
         this.status = RequestStatus.DRAFT;
+    }
+
+    public void updateDraft(String title, String description) {
+        if (status != RequestStatus.DRAFT) {
+            throw new IllegalStateException("Only DRAFT requests can be edited");
+        }
+        this.title = title;
+        this.description = description;
+    }
+
+    public void cancel() {
+        if (status != RequestStatus.DRAFT &&
+                status != RequestStatus.PENDING &&
+                status != RequestStatus.APPROVED) {
+            throw new IllegalStateException("Request cannot be cancelled in status: " + status);
+        }
+        this.status = RequestStatus.CANCELLED;
+    }
+
+    public void startExecution() {
+        if (status != RequestStatus.APPROVED) {
+            throw new IllegalStateException("Only APPROVED requests can start execution");
+        }
+        this.status = RequestStatus.IN_PROGRESS;
+    }
+
+    public void completeExecution() {
+        if (status != RequestStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Only IN_PROGRESS requests can be completed");
+        }
+        this.status = RequestStatus.COMPLETED;
+    }
+
+    public void failExecution() {
+        if (status != RequestStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Only IN_PROGRESS requests can fail");
+        }
+        this.status = RequestStatus.FAILED;
     }
 
     // =====================

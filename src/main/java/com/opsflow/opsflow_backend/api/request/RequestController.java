@@ -1,5 +1,6 @@
 package com.opsflow.opsflow_backend.api.request;
 
+import com.opsflow.opsflow_backend.api.common.PageResponseDto;
 import com.opsflow.opsflow_backend.domain.request.Request;
 import com.opsflow.opsflow_backend.domain.request.RequestHistory;
 import com.opsflow.opsflow_backend.domain.request.RequestStatus;
@@ -7,13 +8,18 @@ import com.opsflow.opsflow_backend.domain.request.event.RequestApprovedEvent;
 import com.opsflow.opsflow_backend.domain.request.event.RequestRejectedEvent;
 import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestHistoryRepository;
 import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestRepository;
+import com.opsflow.opsflow_backend.messaging.config.RabbitMQConfig;
+import com.opsflow.opsflow_backend.messaging.execution.RequestExecutionMessage;
+import com.opsflow.opsflow_backend.messaging.validation.RequestValidationMessage;
 import jakarta.validation.Valid;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.opsflow.opsflow_backend.messaging.config.RabbitMQConfig;
-import com.opsflow.opsflow_backend.messaging.validation.RequestValidationMessage;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.net.URI;
 import java.util.List;
@@ -39,35 +45,18 @@ public class RequestController {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    // Crear solicitud
     @PostMapping
     public ResponseEntity<RequestResponseDto> create(
             @Valid @RequestBody CreateRequestDto dto
     ) {
         Request request = new Request(dto.title(), dto.description());
-
-        // DRAFT → VALIDATED automático
-        RequestStatus from = request.getStatus();
-        request.submit();
-
         Request saved = requestRepository.save(request);
-
-        historyRepository.save(
-                new RequestHistory(saved, from, saved.getStatus())
-        );
-
-        // Disparar Rabbit
-        rabbitTemplate.convertAndSend(
-                RabbitMQConfig.REQUEST_VALIDATION_QUEUE,
-                RequestValidationMessage.of(saved.getId())
-        );
 
         return ResponseEntity
                 .created(URI.create("/requests/" + saved.getId()))
                 .body(RequestResponseDto.from(saved));
     }
 
-    // Obtener por id
     @GetMapping("/{id}")
     public ResponseEntity<RequestResponseDto> getById(@PathVariable Long id) {
         return requestRepository.findById(id)
@@ -76,44 +65,79 @@ public class RequestController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Listar todas
     @GetMapping
-    public List<RequestResponseDto> getAll() {
-        return requestRepository.findAll()
-                .stream()
-                .map(RequestResponseDto::from)
-                .toList();
+    public ResponseEntity<PageResponseDto<RequestResponseDto>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id,asc") String[] sort,
+            @RequestParam(required = false) RequestStatus status
+    ) {
+        Sort.Direction direction = Sort.Direction.ASC;
+        String sortBy = "id";
+
+        if (sort.length > 0) {
+            sortBy = sort[0];
+        }
+        if (sort.length > 1) {
+            direction = Sort.Direction.fromString(sort[1]);
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        Page<RequestResponseDto> result;
+
+        if (status != null) {
+            result = requestRepository.findByStatus(status, pageable)
+                    .map(RequestResponseDto::from);
+        } else {
+            result = requestRepository.findAll(pageable)
+                    .map(RequestResponseDto::from);
+        }
+
+        return ResponseEntity.ok(PageResponseDto.from(result));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<RequestResponseDto> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateRequestDto dto
+    ) {
+        return requestRepository.findById(id)
+                .map(request -> {
+                    request.updateDraft(dto.title(), dto.description());
+                    Request saved = requestRepository.save(request);
+                    return ResponseEntity.ok(RequestResponseDto.from(saved));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{id}/submit")
-    public ResponseEntity<?> submit(@PathVariable Long id) {
+    public ResponseEntity<RequestResponseDto> submit(@PathVariable Long id) {
         return requestRepository.findById(id)
                 .map(request -> {
-
                     if (request.getStatus() != RequestStatus.DRAFT) {
-                        return ResponseEntity.badRequest().build();
+                        return ResponseEntity.badRequest().<RequestResponseDto>build();
                     }
 
                     RequestStatus from = request.getStatus();
-                    request.submit(); // DRAFT → VALIDATED
+                    request.submit();
                     Request saved = requestRepository.save(request);
 
                     historyRepository.save(
                             new RequestHistory(saved, from, saved.getStatus())
                     );
 
-                    // Envío asíncrono a Rabbit
                     rabbitTemplate.convertAndSend(
                             RabbitMQConfig.REQUEST_VALIDATION_QUEUE,
                             RequestValidationMessage.of(saved.getId())
                     );
 
-                    return ResponseEntity.accepted().build();
+                    return ResponseEntity.accepted()
+                            .body(RequestResponseDto.from(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // APPROVE MANUAL
     @PostMapping("/{id}/approve")
     public ResponseEntity<RequestResponseDto> approve(@PathVariable Long id) {
         return requestRepository.findById(id)
@@ -123,16 +147,21 @@ public class RequestController {
                     Request saved = requestRepository.save(request);
 
                     historyRepository.save(
-                            new RequestHistory(saved, from, RequestStatus.APPROVED)
+                            new RequestHistory(saved, from, saved.getStatus())
                     );
+
                     eventPublisher.publishEvent(new RequestApprovedEvent(saved));
+
+                    rabbitTemplate.convertAndSend(
+                            RabbitMQConfig.REQUEST_EXECUTION_QUEUE,
+                            RequestExecutionMessage.of(saved.getId())
+                    );
 
                     return ResponseEntity.ok(RequestResponseDto.from(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // REJECT MANUAL
     @PostMapping("/{id}/reject")
     public ResponseEntity<RequestResponseDto> reject(@PathVariable Long id) {
         return requestRepository.findById(id)
@@ -142,8 +171,9 @@ public class RequestController {
                     Request saved = requestRepository.save(request);
 
                     historyRepository.save(
-                            new RequestHistory(saved, from, RequestStatus.REJECTED)
+                            new RequestHistory(saved, from, saved.getStatus())
                     );
+
                     eventPublisher.publishEvent(new RequestRejectedEvent(saved));
 
                     return ResponseEntity.ok(RequestResponseDto.from(saved));
@@ -151,13 +181,28 @@ public class RequestController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // REINTENTAR: REJECTED → DRAFT
-    @PostMapping("/{id}/retry")
-    public ResponseEntity<?> retry(@PathVariable Long id) {
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<RequestResponseDto> cancel(@PathVariable Long id) {
         return requestRepository.findById(id)
                 .map(request -> {
                     RequestStatus from = request.getStatus();
-                    request.retry();
+                    request.cancel();
+                    Request saved = requestRepository.save(request);
+
+                    historyRepository.save(
+                            new RequestHistory(saved, from, saved.getStatus())
+                    );
+
+                    return ResponseEntity.ok(RequestResponseDto.from(saved));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/retry")
+    public ResponseEntity<RequestResponseDto> retry(@PathVariable Long id) {
+        return requestRepository.findById(id)
+                .map(request -> {
+                    RequestStatus from = request.getStatus();
                     request.retry();
                     Request saved = requestRepository.save(request);
 
@@ -165,18 +210,23 @@ public class RequestController {
                             new RequestHistory(saved, from, saved.getStatus())
                     );
 
-                    return ResponseEntity.ok().build();
+                    return ResponseEntity.ok(RequestResponseDto.from(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // HISTÓRICO
     @GetMapping("/{id}/history")
-    public List<RequestResponseDto.RequestHistoryDto> history(@PathVariable Long id) {
-        return historyRepository
+    public ResponseEntity<List<RequestResponseDto.RequestHistoryDto>> history(@PathVariable Long id) {
+        if (!requestRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<RequestResponseDto.RequestHistoryDto> history = historyRepository
                 .findByRequestIdOrderByChangedAtAsc(id)
                 .stream()
                 .map(RequestResponseDto.RequestHistoryDto::from)
                 .toList();
+
+        return ResponseEntity.ok(history);
     }
 }
