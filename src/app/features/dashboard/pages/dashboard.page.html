@@ -1,0 +1,17 @@
+<app-header></app-header>
+
+<div class="page-container">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Resumen operativo de solicitudes</p>
+  </div>
+
+  <p *ngIf="loading" class="loading">Cargando métricas...</p>
+
+  <div class="kpi-grid" *ngIf="!loading && cards.length > 0">
+    <div class="kpi-card" *ngFor="let card of cards" [ngClass]="card.className">
+      <span class="kpi-label">{{ card.label }}</span>
+      <strong class="kpi-value">{{ card.value }}</strong>
+    </div>
+  </div>
+</div>

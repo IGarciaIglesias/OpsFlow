@@ -1,48 +1,90 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+
 import { Request } from '../models/request.model';
+import { RequestStatus } from '../models/request-status.model';
+
+export interface PageResponseDto<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
+export interface RequestHistoryItem {
+  fromStatus: string;
+  toStatus: string;
+  changedAt: string;
+  changedBy?: string;
+  comment?: string;
+}
+
+export interface RequestPayload {
+  title: string;
+  description: string;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class RequestService {
-
   private readonly API_URL = 'http://localhost:8080/requests';
 
   constructor(private http: HttpClient) {}
 
-  getAll(): Observable<Request[]> {
-    return this.http.get<Request[]>(this.API_URL);
+  getAll(
+    page = 0,
+    size = 10,
+    status?: RequestStatus
+  ): Observable<PageResponseDto<Request>> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('sort', 'id,asc');
+
+    if (status) {
+      params = params.set('status', status);
+    }
+
+    return this.http.get<PageResponseDto<Request>>(this.API_URL, { params });
   }
 
   getById(id: number): Observable<Request> {
     return this.http.get<Request>(`${this.API_URL}/${id}`);
   }
 
-  // ✅ HISTÓRICO
-  getHistory(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.API_URL}/${id}/history`);
+  getHistory(id: number): Observable<RequestHistoryItem[]> {
+    return this.http.get<RequestHistoryItem[]>(`${this.API_URL}/${id}/history`);
   }
 
-  // ✅ ACCIONES
-  approve(id: number): Observable<void> {
-    return this.http.post<void>(`${this.API_URL}/${id}/approve`, {});
+  create(data: RequestPayload): Observable<Request> {
+    return this.http.post<Request>(this.API_URL, data);
   }
 
-  reject(id: number): Observable<void> {
-    return this.http.post<void>(`${this.API_URL}/${id}/reject`, {});
+  update(id: number, data: RequestPayload): Observable<Request> {
+    return this.http.put<Request>(`${this.API_URL}/${id}`, data);
   }
 
-  retry(id: number): Observable<void> {
-    return this.http.post<void>(`${this.API_URL}/${id}/retry`, {});
+  submit(id: number): Observable<Request> {
+    return this.http.post<Request>(`${this.API_URL}/${id}/submit`, {});
   }
 
-  submit(id: number): Observable<void> {
-    return this.http.post<void>(`${this.API_URL}/${id}/submit`, {});
+  approve(id: number): Observable<Request> {
+    return this.http.post<Request>(`${this.API_URL}/${id}/approve`, {});
   }
 
-  create(data: { title: string; description: string }): Observable<any> {
-    return this.http.post(this.API_URL, data);
+  reject(id: number): Observable<Request> {
+    return this.http.post<Request>(`${this.API_URL}/${id}/reject`, {});
+  }
+
+  retry(id: number): Observable<Request> {
+    return this.http.post<Request>(`${this.API_URL}/${id}/retry`, {});
+  }
+
+  cancel(id: number): Observable<Request> {
+    return this.http.post<Request>(`${this.API_URL}/${id}/cancel`, {});
   }
 }

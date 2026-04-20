@@ -1,0 +1,28 @@
+{
+  "basePath": "",
+  "frameworks": ["jasmine"],
+  "plugins": [
+    "karma-jasmine",
+    "karma-chrome-launcher",
+    "karma-jasmine-html-reporter",
+    "karma-coverage"
+  ],
+  "client": {
+    "jasmine": {},
+    "clearContext": false
+  },
+  "jasmineHtmlReporter": {
+    "suppressAll": true
+  },
+  "coverageReporter": {
+    "dir": "./coverage/opsflow-frontend",
+    "subdir": ".",
+    "reporters": [
+      { "type": "html" },
+      { "type": "text-summary" }
+    ]
+  },
+  "reporters": ["progress", "kjhtml", "coverage"],
+  "browsers": ["Chrome"],
+  "restartOnFileChange": true
+}

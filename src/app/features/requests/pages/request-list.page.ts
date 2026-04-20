@@ -7,6 +7,7 @@ import { getUserRole } from '../../../core/utils/auth.utils';
 import { RequestService } from '../services/request.service';
 import { Request } from '../models/request.model';
 import { HeaderComponent } from '../../../core/layout/header.component';
+import { RequestStatus } from '../models/request-status.model';
 
 @Component({
   selector: 'app-request-list',
@@ -16,12 +17,29 @@ import { HeaderComponent } from '../../../core/layout/header.component';
   imports: [CommonModule, RouterModule, HeaderComponent],
 })
 export class RequestListPage implements OnInit, OnDestroy {
-
   role: string | null = null;
   requests: Request[] = [];
 
   loading = false;
   actionBusyId: number | null = null;
+
+  page = 0;
+  size = 10;
+  totalPages = 0;
+  totalElements = 0;
+  selectedStatus: RequestStatus | '' = '';
+
+  readonly availableStatuses: RequestStatus[] = [
+    'DRAFT',
+    'PENDING_VALIDATION',
+    'VALIDATED',
+    'REJECTED',
+    'APPROVED',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'FAILED',
+    'CANCELLED',
+  ];
 
   private pollSub!: Subscription;
 
@@ -31,17 +49,10 @@ export class RequestListPage implements OnInit, OnDestroy {
     private router: Router
   ) {}
 
-  // =====================
-  // Lifecycle
-  // =====================
-
   ngOnInit(): void {
     this.role = getUserRole();
-
-    // 📥 Carga inicial
     this.reload();
 
-    // 🔁 Polling cada 2 segundos
     this.pollSub = interval(2000).subscribe(() => {
       this.reloadSilently();
     });
@@ -51,10 +62,6 @@ export class RequestListPage implements OnInit, OnDestroy {
     this.pollSub?.unsubscribe();
   }
 
-  // =====================
-  // Permisos UI
-  // =====================
-
   canCreate(): boolean {
     return ['ADMIN', 'MANAGER', 'OPERATOR'].includes(this.role ?? '');
   }
@@ -63,52 +70,74 @@ export class RequestListPage implements OnInit, OnDestroy {
     return ['ADMIN', 'MANAGER'].includes(this.role ?? '');
   }
 
-  // =====================
-  // Navegación
-  // =====================
-
   goToCreate(): void {
     this.router.navigate(['/requests/new']);
   }
 
-  // =====================
-  // Carga de datos
-  // =====================
+  onStatusChange(value: string): void {
+    this.selectedStatus = value as RequestStatus | '';
+    this.page = 0;
+    this.reload();
+  }
 
-  /** Carga con loader (acciones manuales) */
+  clearFilters(): void {
+    this.selectedStatus = '';
+    this.page = 0;
+    this.reload();
+  }
+
   reload(): void {
     this.loading = true;
 
-    this.requestService.getAll()
+    this.requestService.getAll(
+      this.page,
+      this.size,
+      this.selectedStatus || undefined
+    )
       .pipe(finalize(() => {
         this.loading = false;
         this.cdr.detectChanges();
       }))
       .subscribe({
         next: data => {
-          this.requests = [...data].sort((a, b) => a.id - b.id);
+          this.requests = data.content;
+          this.totalPages = data.totalPages;
+          this.totalElements = data.totalElements;
           this.cdr.detectChanges();
         },
         error: err => console.error('Error cargando requests', err),
       });
   }
 
-  /** Carga silenciosa (polling) */
   private reloadSilently(): void {
-    this.requestService.getAll().subscribe({
+    this.requestService.getAll(
+      this.page,
+      this.size,
+      this.selectedStatus || undefined
+    ).subscribe({
       next: data => {
-        this.requests = [...data].sort((a, b) => a.id - b.id);
+        this.requests = data.content;
+        this.totalPages = data.totalPages;
+        this.totalElements = data.totalElements;
         this.cdr.detectChanges();
       },
-      error: () => {
-        // En polling no spameamos logs
-      }
+      error: () => {}
     });
   }
 
-  // =====================
-  // Acciones
-  // =====================
+  submit(id: number): void {
+    this.actionBusyId = id;
+
+    this.requestService.submit(id)
+      .pipe(finalize(() => {
+        this.actionBusyId = null;
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
+        next: () => this.reload(),
+        error: err => console.error('Error enviando request', err),
+      });
+  }
 
   approve(id: number): void {
     this.actionBusyId = id;
@@ -149,6 +178,20 @@ export class RequestListPage implements OnInit, OnDestroy {
       .subscribe({
         next: () => this.reload(),
         error: err => console.error('Error reintentando', err),
+      });
+  }
+
+  cancel(id: number): void {
+    this.actionBusyId = id;
+
+    this.requestService.cancel(id)
+      .pipe(finalize(() => {
+        this.actionBusyId = null;
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
+        next: () => this.reload(),
+        error: err => console.error('Error cancelando', err),
       });
   }
 }

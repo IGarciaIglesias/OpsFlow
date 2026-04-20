@@ -1,44 +1,53 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 
+import { AuthService } from '../../../core/services/auth.service';
+import { LoginRequest, LoginResponse } from '../models/login.model';
+
 @Component({
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    styleUrls: ['./login.page.css'],
-    template: `
-        <h1>Login</h1>
-
-        <form (ngSubmit)="login()">
-        <input [(ngModel)]="username" name="username" placeholder="Username" />
-        <input [(ngModel)]="password" name="password" type="password" placeholder="Password" />
-        <button type="submit">Login</button>
-        </form>
-    `,
+  selector: 'app-login',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './login.page.html',
+  styleUrls: ['./login.page.css'],
 })
-
 export class LoginPage {
+  username = '';
+  password = '';
+  loading = false;
+  errorMessage = '';
 
-    username = '';
-    password = '';
-
-    constructor(
+  constructor(
     private authService: AuthService,
     private router: Router
-    ) {}
+  ) {}
 
-    login() {
-    this.authService.login({
-        username: this.username,
-        password: this.password,
-    }).subscribe({
-        next: res => {
-        this.authService.saveToken(res.token);
-        this.router.navigate(['/requests']); 
-        },
-        error: err => console.error(err),
-    });
+  login(): void {
+    this.errorMessage = '';
+
+    const payload: LoginRequest = {
+      username: this.username.trim(),
+      password: this.password,
+    };
+
+    if (!payload.username || !payload.password) {
+      this.errorMessage = 'Introduce usuario y contraseña';
+      return;
     }
+
+    this.loading = true;
+
+    this.authService.login(payload).subscribe({
+      next: (response: LoginResponse) => {
+        this.authService.saveToken(response.token);
+        this.router.navigate(['/requests']);
+      },
+      error: () => {
+        this.errorMessage = 'Credenciales incorrectas';
+        this.loading = false;
+      },
+    });
+  }
 }

@@ -1,9 +1,20 @@
 <header class="app-header">
-  <span class="app-title">OpsFlow</span>
+  <div class="header-left">
+    <a routerLink="/requests" class="brand">OpsFlow Manager</a>
 
-  <span class="spacer"></span>
+    <nav class="nav-links">
+      <a routerLink="/requests" routerLinkActive="active">Requests</a>
+      <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+    </nav>
+  </div>
 
-  <span class="role">Rol: {{ role }}</span>
+  <div class="header-right">
+    <span class="role-badge" *ngIf="role">
+      {{ role }}
+    </span>
 
-  <button (click)="logout()">Cerrar sesión</button>
+    <button class="btn secondary" type="button" (click)="logout()">
+      Logout
+    </button>
+  </div>
 </header>

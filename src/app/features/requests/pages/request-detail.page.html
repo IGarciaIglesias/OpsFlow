@@ -1,23 +1,127 @@
 <app-header></app-header>
 
-<div class="page-container"> 
-  <h1>Detalle de solicitud</h1>
-    <div class="card"></div> 
-        <div *ngIf="request"> 
-        <p><strong>ID:</strong> {{ request.id }}</p>
-        <p><strong>Título:</strong> {{ request.title }}</p>
-        <p><strong>Descripción:</strong> {{ request.description }}</p>
-        <p><strong>Estado:</strong> {{ request.status }}</p>
-        </div> 
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <button class="btn secondary" (click)="back()">← Volver</button>
+      <h1>Solicitud {{ request.code ?? request.id }}</h1>
+    </div>
+  </div>
 
-        <h2>Histórico</h2>
+  <div *ngIf="loading" class="loading">Cargando...</div>
 
-        <ul>
-        <li *ngFor="let h of history">
-            {{ h.fromStatus }} → {{ h.toStatus }} ({{ h.changedAt }})
-        </li>
-        </ul>
-    </div> 
+  <div *ngIf="!loading && request" class="request-detail">
 
-    <button (click)="back()">Volver</button>    
+    <!-- Información principal -->
+    <section class="info-section">
+      <div class="info-grid">
+        <div class="info-card">
+          <h2>Título</h2>
+          <p>{{ request.title }}</p>
+        </div>
 
+        <div class="info-card">
+          <h2>Estado</h2>
+          <span class="status large" [class]="request.status">
+            {{ request.status }}
+          </span>
+        </div>
+
+        <div class="info-card">
+          <h2>Descripción</h2>
+          <p>{{ request.description }}</p>
+        </div>
+
+        <div class="info-card" *ngIf="request.priority">
+          <h2>Prioridad</h2>
+          <span class="priority">{{ request.priority }}</span>
+        </div>
+
+        <div class="info-card" *ngIf="request.type">
+          <h2>Tipo</h2>
+          <p>{{ request.type }}</p>
+        </div>
+
+        <div class="info-card">
+          <h2>Creado</h2>
+          <p>{{ request.createdAt | date:'short' }}</p>
+        </div>
+
+        <div class="info-card" *ngIf="request.creator">
+          <h2>Creador</h2>
+          <p>{{ request.creator }}</p>
+        </div>
+
+        <div class="info-card" *ngIf="request.assignee">
+          <h2>Asignado</h2>
+          <p>{{ request.assignee }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Acciones disponibles -->
+    <section class="actions-section" *ngIf="!actionLoading">
+      <h2>Acciones disponibles</h2>
+      <div class="actions-grid">
+        <button
+          *ngIf="canSubmit()"
+          class="btn warning"
+          (click)="submit()">
+          Enviar a validación
+        </button>
+
+        <button
+          *ngIf="canApprove()"
+          class="btn success"
+          (click)="approve()">
+          Aprobar
+        </button>
+
+        <button
+          *ngIf="canReject()"
+          class="btn danger"
+          (click)="reject()">
+          Rechazar
+        </button>
+
+        <button
+          *ngIf="canRetry()"
+          class="btn warning"
+          (click)="retry()">
+          Reintentar
+        </button>
+
+        <button
+          *ngIf="canCancel()"
+          class="btn secondary"
+          (click)="cancel()">
+          Cancelar
+        </button>
+      </div>
+    </section>
+
+    <!-- Histórico de estados -->
+    <section class="history-section">
+      <h2>Histórico ({{ history.length }})</h2>
+      <div class="history-list" *ngIf="history.length > 0; else noHistory">
+        <div *ngFor="let item of history" class="history-item">
+          <div class="history-statuses">
+            <span class="status small">{{ item.fromStatus }}</span>
+            <span class="arrow">→</span>
+            <span class="status small active">{{ item.toStatus }}</span>
+          </div>
+          <div class="history-meta">
+            <span>{{ item.changedAt | date:'short' }}</span>
+            <span *ngIf="item.changedBy">por {{ item.changedBy }}</span>
+          </div>
+          <div *ngIf="item.comment" class="history-comment">
+            {{ item.comment }}
+          </div>
+        </div>
+      </div>
+      <ng-template #noHistory>
+        <p>No hay cambios de estado aún.</p>
+      </ng-template>
+    </section>
+  </div>
+</div>

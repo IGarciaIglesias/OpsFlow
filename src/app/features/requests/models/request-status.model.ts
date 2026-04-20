@@ -1,7 +1,10 @@
 export type RequestStatus =
   | 'DRAFT'
-  | 'PENDING'
+  | 'PENDING_VALIDATION'
   | 'VALIDATED'
   | 'REJECTED'
   | 'APPROVED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'FAILED'
   | 'CANCELLED';

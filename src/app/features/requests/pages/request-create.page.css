@@ -1,47 +1,54 @@
-.form-container {
-  max-width: 600px;
-  margin: 1.5rem auto;
-  background: var(--card-bg);
-  padding: 1.5rem;
-  border-radius: var(--radius);
+.page-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 }
 
-.form-container h1 {
-  margin-bottom: 1rem;
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.request-form {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #dcdcdc);
+  border-radius: 1rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .form-group {
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-label {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-bottom: 0.3rem;
+.form-group label {
+  font-weight: 600;
 }
 
-input,
-textarea {
+.form-group input,
+.form-group textarea {
+  border: 1px solid var(--color-border, #dcdcdc);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font: inherit;
   width: 100%;
-  padding: 0.5rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 140px;
 }
 
 .form-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  justify-content: flex-end;
 }
 
-.primary {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-}
-
-.secondary {
-  background: transparent;
-  border: 1px solid var(--border);
+.error-message {
+  color: #b42318;
+  font-size: 0.95rem;
 }

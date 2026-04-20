@@ -2,20 +2,22 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+
+import { HeaderComponent } from '../../../core/layout/header.component';
 import { RequestService } from '../services/request.service';
 
 @Component({
   selector: 'app-request-create',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HeaderComponent],
   templateUrl: './request-create.page.html',
   styleUrls: ['./request-create.page.css'],
 })
 export class RequestCreatePage {
-
   title = '';
   description = '';
   loading = false;
+  errorMessage = '';
 
   constructor(
     private requestService: RequestService,
@@ -23,21 +25,28 @@ export class RequestCreatePage {
   ) {}
 
   create(): void {
-    if (!this.title.trim() || !this.description.trim()) {
+    this.errorMessage = '';
+
+    const title = this.title.trim();
+    const description = this.description.trim();
+
+    if (!title || !description) {
+      this.errorMessage = 'Título y descripción son obligatorios';
       return;
     }
 
     this.loading = true;
 
     this.requestService.create({
-      title: this.title,
-      description: this.description,
+      title,
+      description,
     }).subscribe({
       next: () => {
         this.router.navigate(['/requests']);
       },
-      error: err => {
+      error: (err: unknown) => {
         console.error('Error creando request', err);
+        this.errorMessage = 'No se pudo crear la solicitud';
         this.loading = false;
       }
     });

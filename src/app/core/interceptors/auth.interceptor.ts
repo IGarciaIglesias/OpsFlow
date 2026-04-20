@@ -1,8 +1,6 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-
-  // 🔑 NO enviar Authorization en login
   if (req.url.includes('/auth/login')) {
     return next(req);
   }

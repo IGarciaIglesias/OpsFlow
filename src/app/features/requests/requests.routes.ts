@@ -5,12 +5,10 @@ import { RequestDetailPage } from './pages/request-detail.page';
 import { roleGuard } from '../../core/guards/role.guard';
 
 export const REQUEST_ROUTES: Routes = [
-
   {
     path: '',
     component: RequestListPage,
   },
-
   {
     path: 'new',
     component: RequestCreatePage,
@@ -19,13 +17,12 @@ export const REQUEST_ROUTES: Routes = [
       roles: ['ADMIN', 'MANAGER', 'OPERATOR'],
     },
   },
-
   {
     path: ':id',
     component: RequestDetailPage,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN', 'MANAGER'],
+      roles: ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'],
     },
   },
 ];

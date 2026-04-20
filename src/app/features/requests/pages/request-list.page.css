@@ -1,86 +1,27 @@
-.page {
-  padding: 1.5rem;
-}
-
-.page-header {
+.filters-bar {
   display: flex;
+  gap: 1rem;
+  align-items: end;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  margin: 1rem 0 1.5rem;
+  flex-wrap: wrap;
 }
 
-.page-header h1 {
-  margin: 0;
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.create-btn {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 0.45rem 0.9rem;
-  border-radius: var(--radius);
+.filter-group label {
+  font-weight: 600;
 }
 
-table {
-  width: 100%;
-  background: var(--card-bg);
-  border-collapse: collapse;
-  border-radius: var(--radius);
-  overflow: hidden;
+.filter-group select {
+  min-width: 220px;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border, #d0d0d0);
+  background: var(--color-surface, #fff);
+  font: inherit;
 }
-
-td {
-  padding: 0.6rem 0.8rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.9rem;
-}
-
-.actions button {
-  margin-right: 0.4rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: var(--radius);
-  border: none;
-  cursor: pointer;
-}
-
-.approve {
-  background: var(--success);
-  color: white;
-}
-
-.reject {
-  background: var(--danger);
-  color: white;
-}
-
-.retry {
-  background: var(--warning);
-}
-
-.status {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  color: white;
-}
-
-table {
-  width: 100%;
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-tr:hover {
-  background: #f1f5f9;
-}
-
-.actions {
-  white-space: nowrap;
-}
-
-.status.PENDING { background: var(--warning); }
-.status.APPROVED { background: var(--success); }
-.status.REJECTED { background: var(--danger); }
-.status.DRAFT { background: var(--neutral); }
-.status.VALIDATED { background: var(--primary); }

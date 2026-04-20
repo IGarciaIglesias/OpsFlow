@@ -6,4 +6,9 @@ export interface Request {
   description: string;
   status: RequestStatus;
   createdAt: string;
+  code?: string;
+  type?: string;
+  priority?: string;
+  creator?: string;
+  assignee?: string;
 }
