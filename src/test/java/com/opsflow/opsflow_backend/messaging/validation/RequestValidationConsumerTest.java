@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,13 +28,23 @@ class RequestValidationConsumerTest {
         consumer = new RequestValidationConsumer(requestRepository, historyRepository);
     }
 
+    private static void setStatus(Request r, RequestStatus status) {
+        try {
+            Field f = Request.class.getDeclaredField("status");
+            f.setAccessible(true);
+            f.set(r, status);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Test
     void whenRequestIsNotValidated_consumerDoesNothing() {
         Request r = new Request("ok", "desc ok");
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(r));
 
-        consumer.consume(RequestValidationMessage.of(1L));
+        consumer.consume(RequestValidationMessage.of(1L, "msg-1", "2026-04-20T14:00:00Z"));
 
         verify(requestRepository, never()).save(any());
         verify(historyRepository, never()).save(any());
@@ -43,12 +54,12 @@ class RequestValidationConsumerTest {
     @Test
     void whenValidatedAndValid_movesToPendingAndSavesHistory() {
         Request r = new Request("Titulo OK", "Descripcion OK");
-        r.submit();
+        setStatus(r, RequestStatus.VALIDATED);
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        consumer.consume(RequestValidationMessage.of(1L));
+        consumer.consume(RequestValidationMessage.of(1L, "msg-2", "2026-04-20T14:00:01Z"));
 
         assertEquals(RequestStatus.PENDING, r.getStatus());
         verify(requestRepository).save(r);
@@ -65,12 +76,12 @@ class RequestValidationConsumerTest {
     @Test
     void whenValidatedButInvalid_movesToRejectedAndSavesHistory() {
         Request r = new Request("x", "y");
-        r.submit();
+        setStatus(r, RequestStatus.VALIDATED);
 
         when(requestRepository.findById(2L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        consumer.consume(RequestValidationMessage.of(2L));
+        consumer.consume(RequestValidationMessage.of(2L, "msg-3", "2026-04-20T14:00:02Z"));
 
         assertEquals(RequestStatus.REJECTED, r.getStatus());
         verify(requestRepository).save(r);
@@ -90,7 +101,7 @@ class RequestValidationConsumerTest {
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> consumer.consume(RequestValidationMessage.of(99L))
+                () -> consumer.consume(RequestValidationMessage.of(99L, "msg-4", "2026-04-20T14:00:03Z"))
         );
 
         assertTrue(ex.getMessage().contains("Request not found"));

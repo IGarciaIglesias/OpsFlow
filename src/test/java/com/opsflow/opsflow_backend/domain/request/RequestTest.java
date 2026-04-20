@@ -2,9 +2,21 @@ package com.opsflow.opsflow_backend.domain.request;
 
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class RequestTest {
+
+    private static void setStatus(Request r, RequestStatus status) {
+        try {
+            Field f = Request.class.getDeclaredField("status");
+            f.setAccessible(true);
+            f.set(r, status);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Test
     void constructor_setsDraftAndCreatedAt() {
@@ -14,27 +26,9 @@ class RequestTest {
     }
 
     @Test
-    void submit_movesDraftToValidated() {
-        Request r = new Request("title", "desc");
-
-        r.submit();
-
-        assertEquals(RequestStatus.VALIDATED, r.getStatus());
-    }
-
-    @Test
-    void submit_throwsIfNotDraft() {
-        Request r = new Request("title", "desc");
-        r.submit();
-
-        IllegalStateException ex = assertThrows(IllegalStateException.class, r::submit);
-        assertTrue(ex.getMessage().contains("Only DRAFT"));
-    }
-
-    @Test
     void validate_movesValidatedToPending() {
         Request r = new Request("title", "desc");
-        r.submit();
+        setStatus(r, RequestStatus.VALIDATED);
 
         r.validate();
 
@@ -52,7 +46,7 @@ class RequestTest {
     @Test
     void validationFailed_movesValidatedToRejected() {
         Request r = new Request("title", "desc");
-        r.submit();
+        setStatus(r, RequestStatus.VALIDATED);
 
         r.validationFailed();
 
@@ -70,8 +64,7 @@ class RequestTest {
     @Test
     void approve_movesPendingToApproved() {
         Request r = new Request("title", "desc");
-        r.submit();
-        r.validate();
+        setStatus(r, RequestStatus.PENDING);
 
         r.approve();
 
@@ -81,8 +74,7 @@ class RequestTest {
     @Test
     void reject_movesPendingToRejected() {
         Request r = new Request("title", "desc");
-        r.submit();
-        r.validate();
+        setStatus(r, RequestStatus.PENDING);
 
         r.reject();
 
@@ -92,7 +84,7 @@ class RequestTest {
     @Test
     void approve_throwsIfNotPending() {
         Request r = new Request("title", "desc");
-        r.submit();
+        setStatus(r, RequestStatus.VALIDATED);
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, r::approve);
         assertTrue(ex.getMessage().contains("Only PENDING"));
@@ -101,7 +93,7 @@ class RequestTest {
     @Test
     void reject_throwsIfNotPending() {
         Request r = new Request("title", "desc");
-        r.submit();
+        setStatus(r, RequestStatus.VALIDATED);
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, r::reject);
         assertTrue(ex.getMessage().contains("Only PENDING"));
@@ -110,8 +102,7 @@ class RequestTest {
     @Test
     void retry_movesRejectedToDraft() {
         Request r = new Request("title", "desc");
-        r.submit();
-        r.validationFailed();
+        setStatus(r, RequestStatus.REJECTED);
 
         r.retry();
 
