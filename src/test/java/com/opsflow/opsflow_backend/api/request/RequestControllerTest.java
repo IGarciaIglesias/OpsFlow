@@ -77,10 +77,17 @@ class RequestControllerTest {
 
         mvc.perform(post("/requests")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"Titulo OK\",\"description\":\"Descripcion OK\"}"))
+                        .content("""
+                                {
+                                  "title": "Titulo OK",
+                                  "description": "Descripcion OK"
+                                }
+                                """))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/requests/10"))
                 .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.title").value("Titulo OK"))
+                .andExpect(jsonPath("$.description").value("Descripcion OK"))
                 .andExpect(jsonPath("$.status").value("DRAFT"));
     }
 
@@ -94,6 +101,8 @@ class RequestControllerTest {
         mvc.perform(get("/requests/5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5))
+                .andExpect(jsonPath("$.title").value("t"))
+                .andExpect(jsonPath("$.description").value("desc ok"))
                 .andExpect(jsonPath("$.status").value("DRAFT"));
     }
 
@@ -109,6 +118,7 @@ class RequestControllerTest {
     void getAll_shouldReturnList() throws Exception {
         Request r1 = new Request("a", "desc 1");
         setId(r1, 1L);
+
         Request r2 = new Request("b", "desc 2");
         setId(r2, 2L);
 
@@ -117,7 +127,9 @@ class RequestControllerTest {
         mvc.perform(get("/requests"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[1].id").value(2));
+                .andExpect(jsonPath("$[0].title").value("a"))
+                .andExpect(jsonPath("$[1].id").value(2))
+                .andExpect(jsonPath("$[1].title").value("b"));
     }
 
     @Test
@@ -129,7 +141,8 @@ class RequestControllerTest {
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
 
         mvc.perform(post("/requests/7/submit"))
-                .andExpect(status().isAccepted());
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("VALIDATED"));
 
         verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
@@ -160,8 +173,9 @@ class RequestControllerTest {
         mvc.perform(post("/requests/8/submit"))
                 .andExpect(status().isBadRequest());
 
-        verifyNoInteractions(rabbitTemplate);
+        verify(requestRepository, never()).save(any());
         verify(historyRepository, never()).save(any());
+        verifyNoInteractions(rabbitTemplate);
     }
 
     @Test
@@ -185,6 +199,7 @@ class RequestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
 
+        verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
     }
 
@@ -209,6 +224,7 @@ class RequestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"));
 
+        verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
     }
 
@@ -230,8 +246,10 @@ class RequestControllerTest {
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
 
         mvc.perform(post("/requests/9/retry"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRAFT"));
 
+        verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
     }
 
@@ -251,7 +269,6 @@ class RequestControllerTest {
         RequestHistory h1 = new RequestHistory(r, RequestStatus.DRAFT, RequestStatus.VALIDATED);
         RequestHistory h2 = new RequestHistory(r, RequestStatus.VALIDATED, RequestStatus.PENDING);
 
-        when(requestRepository.existsById(20L)).thenReturn(true);
         when(historyRepository.findByRequestIdOrderByChangedAtAsc(20L)).thenReturn(List.of(h1, h2));
 
         mvc.perform(get("/requests/20/history"))

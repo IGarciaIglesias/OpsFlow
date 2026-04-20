@@ -29,19 +29,21 @@ class RequestValidationConsumerTest {
 
     @Test
     void whenRequestIsNotValidated_consumerDoesNothing() {
-        Request r = new Request("ok", "desc ok"); // DRAFT
+        Request r = new Request("ok", "desc ok");
+
         when(requestRepository.findById(1L)).thenReturn(Optional.of(r));
 
         consumer.consume(RequestValidationMessage.of(1L));
 
         verify(requestRepository, never()).save(any());
         verify(historyRepository, never()).save(any());
+        assertEquals(RequestStatus.DRAFT, r.getStatus());
     }
 
     @Test
     void whenValidatedAndValid_movesToPendingAndSavesHistory() {
         Request r = new Request("Titulo OK", "Descripcion OK");
-        r.submit(); // VALIDATED
+        r.submit();
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -62,8 +64,8 @@ class RequestValidationConsumerTest {
 
     @Test
     void whenValidatedButInvalid_movesToRejectedAndSavesHistory() {
-        Request r = new Request("x", "y"); // inválido (reglas del consumer)
-        r.submit(); // VALIDATED
+        Request r = new Request("x", "y");
+        r.submit();
 
         when(requestRepository.findById(2L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -72,7 +74,14 @@ class RequestValidationConsumerTest {
 
         assertEquals(RequestStatus.REJECTED, r.getStatus());
         verify(requestRepository).save(r);
-        verify(historyRepository).save(any(RequestHistory.class));
+
+        ArgumentCaptor<RequestHistory> captor = ArgumentCaptor.forClass(RequestHistory.class);
+        verify(historyRepository).save(captor.capture());
+
+        RequestHistory savedHistory = captor.getValue();
+        assertEquals(RequestStatus.VALIDATED, savedHistory.getFromStatus());
+        assertEquals(RequestStatus.REJECTED, savedHistory.getToStatus());
+        assertNotNull(savedHistory.getChangedAt());
     }
 
     @Test
@@ -83,6 +92,7 @@ class RequestValidationConsumerTest {
                 IllegalStateException.class,
                 () -> consumer.consume(RequestValidationMessage.of(99L))
         );
+
         assertTrue(ex.getMessage().contains("Request not found"));
     }
 }

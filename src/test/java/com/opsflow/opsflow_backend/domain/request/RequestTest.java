@@ -16,7 +16,6 @@ class RequestTest {
     @Test
     void submit_movesDraftToValidated() {
         Request r = new Request("title", "desc");
-        assertEquals(RequestStatus.DRAFT, r.getStatus());
 
         r.submit();
 
@@ -26,7 +25,7 @@ class RequestTest {
     @Test
     void submit_throwsIfNotDraft() {
         Request r = new Request("title", "desc");
-        r.submit(); // ahora VALIDATED
+        r.submit();
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, r::submit);
         assertTrue(ex.getMessage().contains("Only DRAFT"));
@@ -35,7 +34,7 @@ class RequestTest {
     @Test
     void validate_movesValidatedToPending() {
         Request r = new Request("title", "desc");
-        r.submit(); // VALIDATED
+        r.submit();
 
         r.validate();
 
@@ -44,9 +43,27 @@ class RequestTest {
 
     @Test
     void validate_throwsIfNotValidated() {
-        Request r = new Request("title", "desc"); // DRAFT
+        Request r = new Request("title", "desc");
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, r::validate);
+        assertTrue(ex.getMessage().contains("Only VALIDATED"));
+    }
+
+    @Test
+    void validationFailed_movesValidatedToRejected() {
+        Request r = new Request("title", "desc");
+        r.submit();
+
+        r.validationFailed();
+
+        assertEquals(RequestStatus.REJECTED, r.getStatus());
+    }
+
+    @Test
+    void validationFailed_throwsIfNotValidated() {
+        Request r = new Request("title", "desc");
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, r::validationFailed);
         assertTrue(ex.getMessage().contains("Only VALIDATED"));
     }
 
@@ -54,7 +71,7 @@ class RequestTest {
     void approve_movesPendingToApproved() {
         Request r = new Request("title", "desc");
         r.submit();
-        r.validate(); // PENDING
+        r.validate();
 
         r.approve();
 
@@ -65,7 +82,7 @@ class RequestTest {
     void reject_movesPendingToRejected() {
         Request r = new Request("title", "desc");
         r.submit();
-        r.validate(); // PENDING
+        r.validate();
 
         r.reject();
 
@@ -75,7 +92,7 @@ class RequestTest {
     @Test
     void approve_throwsIfNotPending() {
         Request r = new Request("title", "desc");
-        r.submit(); // VALIDATED
+        r.submit();
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, r::approve);
         assertTrue(ex.getMessage().contains("Only PENDING"));
@@ -84,7 +101,7 @@ class RequestTest {
     @Test
     void reject_throwsIfNotPending() {
         Request r = new Request("title", "desc");
-        r.submit(); // VALIDATED
+        r.submit();
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, r::reject);
         assertTrue(ex.getMessage().contains("Only PENDING"));
@@ -94,8 +111,7 @@ class RequestTest {
     void retry_movesRejectedToDraft() {
         Request r = new Request("title", "desc");
         r.submit();
-        r.validate();
-        r.reject(); // REJECTED
+        r.validationFailed();
 
         r.retry();
 
@@ -108,27 +124,5 @@ class RequestTest {
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, r::retry);
         assertTrue(ex.getMessage().contains("Only REJECTED"));
-    }
-
-    @Test
-    void approve_whenNotPending_shouldFail() {
-        Request r = new Request("t", "desc ok");
-        r.submit(); // VALIDATED
-
-        assertThrows(IllegalStateException.class, r::approve);
-    }
-
-    @Test
-    void reject_whenNotPending_shouldFail() {
-        Request r = new Request("t", "desc ok");
-
-        assertThrows(IllegalStateException.class, r::reject);
-    }
-
-    @Test
-    void retry_whenNotRejected_shouldFail() {
-        Request r = new Request("t", "desc ok");
-
-        assertThrows(IllegalStateException.class, r::retry);
     }
 }

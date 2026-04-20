@@ -28,10 +28,7 @@ class AuthControllerTest {
         authenticationManager = mock(AuthenticationManager.class);
         jwtService = mock(JwtService.class);
 
-        AuthController controller =
-                new AuthController(authenticationManager, jwtService);
-
-        // ✅ Spring 7+: NO definir MessageConverters manualmente
+        AuthController controller = new AuthController(authenticationManager, jwtService);
         mvc = standaloneSetup(controller).build();
     }
 
@@ -42,9 +39,8 @@ class AuthControllerTest {
                 .authorities("ROLE_ADMIN")
                 .build();
 
-        Authentication auth =
-                new UsernamePasswordAuthenticationToken(
-                        admin, null, admin.getAuthorities());
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                admin, null, admin.getAuthorities());
 
         when(authenticationManager.authenticate(any(Authentication.class)))
                 .thenReturn(auth);
