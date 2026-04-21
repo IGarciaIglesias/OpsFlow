@@ -10,6 +10,8 @@ import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestRep
 import com.opsflow.opsflow_backend.messaging.config.RabbitMQConfig;
 import com.opsflow.opsflow_backend.messaging.execution.RequestExecutionMessage;
 import com.opsflow.opsflow_backend.messaging.validation.RequestValidationMessage;
+import com.opsflow.opsflow_backend.security.CustomUserDetailsService;
+import com.opsflow.opsflow_backend.security.jwt.JwtService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -51,6 +53,12 @@ class RequestControllerTest {
 
     @MockitoBean
     RabbitTemplate rabbitTemplate;
+
+    @MockitoBean
+    JwtService jwtService;
+
+    @MockitoBean
+    CustomUserDetailsService customUserDetailsService;
 
     private static void setId(Request r, long id) {
         try {
