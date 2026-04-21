@@ -117,9 +117,11 @@ class RequestValidationConsumerTest {
     void whenRequestDoesNotExist_throwException() {
         when(requestRepository.findById(99L)).thenReturn(Optional.empty());
 
+        RequestValidationMessage message = RequestValidationMessage.of(99L, "msg-5", "corr-5");
+
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> consumer.consume(RequestValidationMessage.of(99L, "msg-5", "corr-5"))
+                () -> consumer.consume(message)
         );
 
         assertTrue(ex.getMessage().contains("Request not found"));

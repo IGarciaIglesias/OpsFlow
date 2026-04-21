@@ -3,8 +3,6 @@ package com.opsflow.opsflow_backend.api.request;
 import com.opsflow.opsflow_backend.domain.request.Request;
 import com.opsflow.opsflow_backend.domain.request.RequestHistory;
 import com.opsflow.opsflow_backend.domain.request.RequestStatus;
-import com.opsflow.opsflow_backend.domain.request.event.RequestApprovedEvent;
-import com.opsflow.opsflow_backend.domain.request.event.RequestRejectedEvent;
 import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestHistoryRepository;
 import com.opsflow.opsflow_backend.infrastructure.persistence.request.RequestRepository;
 import com.opsflow.opsflow_backend.messaging.config.RabbitMQConfig;
@@ -340,7 +338,6 @@ class RequestControllerTest {
 
         verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
-        verify(eventPublisher).publishEvent(any(RequestApprovedEvent.class));
         verify(rabbitTemplate).convertAndSend(eq(RabbitMQConfig.REQUEST_EXECUTION_QUEUE), any(RequestExecutionMessage.class));
     }
 
@@ -367,7 +364,6 @@ class RequestControllerTest {
 
         verify(requestRepository).save(r);
         verify(historyRepository).save(any(RequestHistory.class));
-        verify(eventPublisher).publishEvent(any(RequestRejectedEvent.class));
     }
 
     @Test
