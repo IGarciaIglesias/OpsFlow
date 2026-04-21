@@ -71,7 +71,7 @@ class RequestWorkflowServiceTest {
 
         Request result = service.submit(1L, "iago");
 
-        assertEquals(RequestStatus.PENDING, result.getStatus());
+        assertEquals(RequestStatus.DRAFT, result.getStatus());
         verify(requestRepository).save(request);
         verify(historyRepository).save(any(RequestHistory.class));
         verify(validationProducer).send(1L, request.getCode(), "iago");

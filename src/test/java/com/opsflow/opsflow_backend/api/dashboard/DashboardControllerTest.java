@@ -1,6 +1,8 @@
 package com.opsflow.opsflow_backend.api.dashboard;
 
 import com.opsflow.opsflow_backend.application.dashboard.DashboardService;
+import com.opsflow.opsflow_backend.security.jwt.JwtAuthenticationFilter;
+import com.opsflow.opsflow_backend.security.jwt.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -21,6 +23,12 @@ class DashboardControllerTest {
 
     @MockitoBean
     DashboardService dashboardService;
+
+    @MockitoBean
+    JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    JwtService jwtService;
 
     @Test
     void summary_shouldReturn200() throws Exception {

@@ -1,12 +1,12 @@
 package com.opsflow.opsflow_backend.config;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.lang.reflect.Field;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,24 +19,22 @@ class CorsConfigTest {
 
         assertNotNull(filter);
 
-        Field sourceField = CorsFilter.class.getDeclaredField("configSource");
-        sourceField.setAccessible(true);
-        UrlBasedCorsConfigurationSource source =
-                (UrlBasedCorsConfigurationSource) sourceField.get(filter);
+        Field field = CorsFilter.class.getDeclaredField("configSource");
+        field.setAccessible(true);
+        CorsConfigurationSource source = (CorsConfigurationSource) field.get(filter);
 
-        Field configMapField = UrlBasedCorsConfigurationSource.class.getDeclaredField("corsConfigurations");
-        configMapField.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        Map<String, CorsConfiguration> configs = (Map<String, CorsConfiguration>) configMapField.get(source);
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/anything");
+        request.addHeader("Origin", "http://localhost:4200");
 
-        CorsConfiguration cors = configs.get("/**");
+        var cors = source.getCorsConfiguration(request);
+
         assertNotNull(cors);
-        assertEquals("http://localhost:4200", cors.getAllowedOrigins().get(0));
+        assertTrue(cors.getAllowedOrigins().contains("http://localhost:4200"));
         assertTrue(cors.getAllowedMethods().contains("GET"));
         assertTrue(cors.getAllowedMethods().contains("POST"));
         assertTrue(cors.getAllowedMethods().contains("PUT"));
         assertTrue(cors.getAllowedMethods().contains("DELETE"));
         assertTrue(cors.getAllowedMethods().contains("OPTIONS"));
-        assertTrue(cors.getAllowCredentials());
+        assertTrue(Boolean.TRUE.equals(cors.getAllowCredentials()));
     }
 }
