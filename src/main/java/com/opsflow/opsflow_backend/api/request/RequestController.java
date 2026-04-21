@@ -48,7 +48,15 @@ public class RequestController {
 
     @PostMapping
     public ResponseEntity<RequestResponseDto> create(@Valid @RequestBody CreateRequestDto dto) {
-        Request request = new Request(dto.title(), dto.description());
+        Request request = new Request(
+                dto.title(),
+                dto.description(),
+                dto.creator(),
+                dto.assignee(),
+                dto.priority(),
+                dto.type()
+        );
+
         Request saved = requestRepository.save(request);
 
         return ResponseEntity
@@ -97,7 +105,15 @@ public class RequestController {
     ) {
         return requestRepository.findById(id)
                 .map(request -> {
-                    request.updateDraft(dto.title(), dto.description());
+                    request.updateDraft(
+                            dto.title(),
+                            dto.description(),
+                            dto.creator(),
+                            dto.assignee(),
+                            dto.priority(),
+                            dto.type()
+                    );
+
                     Request saved = requestRepository.save(request);
                     return ResponseEntity.ok(RequestResponseDto.from(saved));
                 })
@@ -113,7 +129,7 @@ public class RequestController {
                     }
 
                     RequestStatus from = request.getStatus();
-                    request.submitForValidation(); // usa aquí el nombre real de tu dominio
+                    request.submitForValidation();
                     Request saved = requestRepository.save(request);
 
                     historyRepository.save(new RequestHistory(saved, from, saved.getStatus()));

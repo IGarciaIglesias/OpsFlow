@@ -22,6 +22,20 @@ public class Request {
     @Column(length = 1000)
     private String description;
 
+    @Column(length = 120)
+    private String creator;
+
+    @Column(length = 120)
+    private String assignee;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private RequestPriority priority;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private RequestType type;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private RequestStatus status;
@@ -31,12 +45,34 @@ public class Request {
 
     protected Request() {}
 
-    public Request(String title, String description) {
+    public Request(
+            String title,
+            String description,
+            String creator,
+            String assignee,
+            RequestPriority priority,
+            RequestType type
+    ) {
         this.code = generateCode();
         this.title = title;
         this.description = description;
+        this.creator = creator;
+        this.assignee = assignee;
+        this.priority = priority;
+        this.type = type;
         this.status = RequestStatus.DRAFT;
         this.createdAt = Instant.now();
+    }
+
+    public Request(String title, String description) {
+        this(
+                title,
+                description,
+                null,
+                null,
+                RequestPriority.MEDIUM,
+                RequestType.SUPPORT
+        );
     }
 
     @PrePersist
@@ -49,6 +85,12 @@ public class Request {
         }
         if (this.createdAt == null) {
             this.createdAt = Instant.now();
+        }
+        if (this.priority == null) {
+            this.priority = RequestPriority.MEDIUM;
+        }
+        if (this.type == null) {
+            this.type = RequestType.SUPPORT;
         }
     }
 
@@ -91,9 +133,24 @@ public class Request {
     }
 
     public void updateDraft(String title, String description) {
+        updateDraft(title, description, this.creator, this.assignee, this.priority, this.type);
+    }
+
+    public void updateDraft(
+            String title,
+            String description,
+            String creator,
+            String assignee,
+            RequestPriority priority,
+            RequestType type
+    ) {
         ensureStatus(RequestStatus.DRAFT);
         this.title = title;
         this.description = description;
+        this.creator = creator;
+        this.assignee = assignee;
+        this.priority = priority;
+        this.type = type;
     }
 
     public void cancel() {
@@ -143,6 +200,22 @@ public class Request {
 
     public String getDescription() {
         return description;
+    }
+
+    public String getCreator() {
+        return creator;
+    }
+
+    public String getAssignee() {
+        return assignee;
+    }
+
+    public RequestPriority getPriority() {
+        return priority;
+    }
+
+    public RequestType getType() {
+        return type;
     }
 
     public RequestStatus getStatus() {

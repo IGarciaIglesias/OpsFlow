@@ -39,48 +39,47 @@ class RequestValidationConsumerTest {
     }
 
     @Test
-    void whenRequestIsNotValidated_consumerDoesNothing() {
-        Request r = new Request("ok", "desc ok");
-
+    void whenRequestIsNotPending_consumerDoesNothing() {
+        Request r = new Request("ok title", "desc ok ok ok");
         when(requestRepository.findById(1L)).thenReturn(Optional.of(r));
 
-        consumer.consume(RequestValidationMessage.of(1L, "msg-1", "2026-04-20T14:00:00Z"));
+        consumer.consume(RequestValidationMessage.of(1L, "msg-1", "corr-1"));
 
         verify(requestRepository, never()).save(any());
         verify(historyRepository, never()).save(any());
     }
 
     @Test
-    void whenValidatedAndValid_movesToPendingAndSavesHistory() {
-        Request r = new Request("Titulo OK", "Descripcion OK");
-        setStatus(r, RequestStatus.VALIDATED);
+    void whenValid_movesToValidatedAndSavesHistory() {
+        Request r = new Request("Titulo OK", "Descripcion suficientemente larga para pasar validacion");
+        setStatus(r, RequestStatus.PENDING);
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        consumer.consume(RequestValidationMessage.of(1L, "msg-2", "2026-04-20T14:00:01Z"));
+        consumer.consume(RequestValidationMessage.of(1L, "msg-2", "corr-2"));
 
-        assertEquals(RequestStatus.PENDING, r.getStatus());
+        assertEquals(RequestStatus.VALIDATED, r.getStatus());
         verify(requestRepository).save(r);
 
         ArgumentCaptor<RequestHistory> captor = ArgumentCaptor.forClass(RequestHistory.class);
         verify(historyRepository).save(captor.capture());
 
         RequestHistory savedHistory = captor.getValue();
-        assertEquals(RequestStatus.VALIDATED, savedHistory.getFromStatus());
-        assertEquals(RequestStatus.PENDING, savedHistory.getToStatus());
+        assertEquals(RequestStatus.PENDING, savedHistory.getFromStatus());
+        assertEquals(RequestStatus.VALIDATED, savedHistory.getToStatus());
         assertNotNull(savedHistory.getChangedAt());
     }
 
     @Test
-    void whenValidatedButInvalid_movesToRejectedAndSavesHistory() {
-        Request r = new Request("x", "y");
-        setStatus(r, RequestStatus.VALIDATED);
+    void whenSpamDetected_movesToRejectedAndSavesHistory() {
+        Request r = new Request("buy now", "Descripcion suficientemente larga para pasar validacion");
+        setStatus(r, RequestStatus.PENDING);
 
         when(requestRepository.findById(2L)).thenReturn(Optional.of(r));
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        consumer.consume(RequestValidationMessage.of(2L, "msg-3", "2026-04-20T14:00:02Z"));
+        consumer.consume(RequestValidationMessage.of(2L, "msg-3", "corr-3"));
 
         assertEquals(RequestStatus.REJECTED, r.getStatus());
         verify(requestRepository).save(r);
@@ -89,9 +88,29 @@ class RequestValidationConsumerTest {
         verify(historyRepository).save(captor.capture());
 
         RequestHistory savedHistory = captor.getValue();
-        assertEquals(RequestStatus.VALIDATED, savedHistory.getFromStatus());
+        assertEquals(RequestStatus.PENDING, savedHistory.getFromStatus());
         assertEquals(RequestStatus.REJECTED, savedHistory.getToStatus());
-        assertNotNull(savedHistory.getChangedAt());
+    }
+
+    @Test
+    void whenDescriptionIsOnlyNoise_movesToFailedAndSavesHistory() {
+        Request r = new Request("Titulo OK", "!!!");
+        setStatus(r, RequestStatus.PENDING);
+
+        when(requestRepository.findById(3L)).thenReturn(Optional.of(r));
+        when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        consumer.consume(RequestValidationMessage.of(3L, "msg-4", "corr-4"));
+
+        assertEquals(RequestStatus.FAILED, r.getStatus());
+        verify(requestRepository).save(r);
+
+        ArgumentCaptor<RequestHistory> captor = ArgumentCaptor.forClass(RequestHistory.class);
+        verify(historyRepository).save(captor.capture());
+
+        RequestHistory savedHistory = captor.getValue();
+        assertEquals(RequestStatus.PENDING, savedHistory.getFromStatus());
+        assertEquals(RequestStatus.FAILED, savedHistory.getToStatus());
     }
 
     @Test
@@ -100,7 +119,7 @@ class RequestValidationConsumerTest {
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> consumer.consume(RequestValidationMessage.of(99L, "msg-4", "2026-04-20T14:00:03Z"))
+                () -> consumer.consume(RequestValidationMessage.of(99L, "msg-5", "corr-5"))
         );
 
         assertTrue(ex.getMessage().contains("Request not found"));
