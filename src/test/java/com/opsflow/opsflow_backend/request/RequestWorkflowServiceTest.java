@@ -71,7 +71,7 @@ class RequestWorkflowServiceTest {
 
         Request result = service.submit(1L, "iago");
 
-        assertEquals(RequestStatus.DRAFT, result.getStatus());
+        assertEquals(RequestStatus.PENDING, result.getStatus());
         verify(requestRepository).save(request);
         verify(historyRepository).save(any(RequestHistory.class));
         verify(validationProducer).send(1L, request.getCode(), "iago");
@@ -185,7 +185,7 @@ class RequestWorkflowServiceTest {
     }
 
     @Test
-    void retry_shouldMoveFailedToPending() {
+    void retry_shouldMoveFailedToDraft() {
         Request request = new Request("Titulo", "Descripcion suficiente");
         setId(request, 5L);
         setStatus(request, RequestStatus.FAILED);

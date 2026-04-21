@@ -9,6 +9,7 @@ import com.opsflow.opsflow_backend.messaging.config.RabbitMQConfig;
 import com.opsflow.opsflow_backend.messaging.execution.RequestExecutionMessage;
 import com.opsflow.opsflow_backend.messaging.validation.RequestValidationMessage;
 import com.opsflow.opsflow_backend.security.CustomUserDetailsService;
+import com.opsflow.opsflow_backend.security.jwt.JwtAuthenticationFilter;
 import com.opsflow.opsflow_backend.security.jwt.JwtService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -52,6 +53,9 @@ class RequestControllerTest {
 
     @MockitoBean
     RabbitTemplate rabbitTemplate;
+
+    @MockitoBean
+    JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @MockitoBean
     JwtService jwtService;
