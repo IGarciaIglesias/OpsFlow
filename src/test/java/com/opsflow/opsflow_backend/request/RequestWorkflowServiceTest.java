@@ -195,7 +195,7 @@ class RequestWorkflowServiceTest {
 
         Request result = service.retry(5L);
 
-        assertEquals(RequestStatus.PENDING, result.getStatus());
+        assertEquals(RequestStatus.DRAFT, result.getStatus());
         verify(requestRepository).save(request);
         verify(historyRepository).save(any(RequestHistory.class));
         verifyNoInteractions(validationProducer, executionProducer);
