@@ -16,7 +16,7 @@
           <div class="form-group">
             <div class="label-row">
               <label for="title">Título</label>
-              <span class="field-hint">{{ title?.length || 0 }}/120</span>
+              <span class="field-hint">{{ title.length }}/120</span>
             </div>
 
             <input
@@ -63,6 +63,97 @@
             <small class="error-text" *ngIf="descriptionModel.invalid && descriptionModel.touched">
               La descripción es obligatoria.
             </small>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <div class="label-row">
+                <label for="creator">Creador</label>
+              </div>
+
+              <input
+                id="creator"
+                name="creator"
+                type="text"
+                [(ngModel)]="creator"
+                #creatorModel="ngModel"
+                [disabled]="loading"
+                maxlength="120"
+                required
+                placeholder="Ej. Iago García"
+                [class.is-invalid]="creatorModel.invalid && creatorModel.touched" />
+
+              <small class="error-text" *ngIf="creatorModel.invalid && creatorModel.touched">
+                El creador es obligatorio.
+              </small>
+            </div>
+
+            <div class="form-group">
+              <div class="label-row">
+                <label for="assignee">Asignado</label>
+              </div>
+
+              <input
+                id="assignee"
+                name="assignee"
+                type="text"
+                [(ngModel)]="assignee"
+                [disabled]="loading"
+                maxlength="120"
+                placeholder="Ej. Equipo DevOps" />
+
+              <small class="help-text">
+                Opcional, puedes dejarlo vacío inicialmente.
+              </small>
+            </div>
+
+            <div class="form-group">
+              <div class="label-row">
+                <label for="priority">Prioridad</label>
+              </div>
+
+              <select
+                id="priority"
+                name="priority"
+                [(ngModel)]="priority"
+                #priorityModel="ngModel"
+                [disabled]="loading"
+                required
+                [class.is-invalid]="priorityModel.invalid && priorityModel.touched">
+                <option value="" disabled>Selecciona una prioridad</option>
+                <option *ngFor="let item of priorityOptions" [value]="item.code">
+                  {{ item.description }}
+                </option>
+              </select>
+
+              <small class="error-text" *ngIf="priorityModel.invalid && priorityModel.touched">
+                La prioridad es obligatoria.
+              </small>
+            </div>
+
+            <div class="form-group">
+              <div class="label-row">
+                <label for="type">Tipo</label>
+              </div>
+
+              <select
+                id="type"
+                name="type"
+                [(ngModel)]="type"
+                #typeModel="ngModel"
+                [disabled]="loading"
+                required
+                [class.is-invalid]="typeModel.invalid && typeModel.touched">
+                <option value="" disabled>Selecciona un tipo</option>
+                <option *ngFor="let item of typeOptions" [value]="item.code">
+                  {{ item.description }}
+                </option>
+              </select>
+
+              <small class="error-text" *ngIf="typeModel.invalid && typeModel.touched">
+                El tipo es obligatorio.
+              </small>
+            </div>
           </div>
         </div>
 

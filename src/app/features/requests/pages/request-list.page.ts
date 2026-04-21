@@ -1,13 +1,15 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { finalize, interval, Subscription } from 'rxjs';
+import { finalize, forkJoin, interval, Subscription } from 'rxjs';
 
 import { getUserRole } from '../../../core/utils/auth.utils';
 import { RequestService } from '../services/request.service';
 import { Request } from '../models/request.model';
 import { HeaderComponent } from '../../../core/layout/header.component';
 import { RequestStatus } from '../models/request-status.model';
+import { CatalogService } from '../services/catalog.service';
+import { CatalogItem } from '../models/catalog.model';
 
 @Component({
   selector: 'app-request-list',
@@ -29,28 +31,32 @@ export class RequestListPage implements OnInit, OnDestroy {
   totalElements = 0;
   selectedStatus: RequestStatus | '' = '';
 
-  readonly availableStatuses: RequestStatus[] = [
-    'DRAFT',
-    'PENDING_VALIDATION',
-    'VALIDATED',
-    'REJECTED',
-    'APPROVED',
-    'IN_PROGRESS',
-    'COMPLETED',
-    'FAILED',
-    'CANCELLED',
-  ];
+  availableStatuses: CatalogItem[] = [];
 
   private pollSub!: Subscription;
 
   constructor(
     private requestService: RequestService,
+    private catalogService: CatalogService,
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.role = getUserRole();
+
+    forkJoin({
+      statuses: this.catalogService.getActiveByCategory('REQUEST_STATUS'),
+    }).subscribe({
+      next: ({ statuses }) => {
+        this.availableStatuses = statuses;
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        console.error('Error cargando catálogos', err);
+      }
+    });
+
     this.reload();
 
     this.pollSub = interval(2000).subscribe(() => {
@@ -67,6 +73,10 @@ export class RequestListPage implements OnInit, OnDestroy {
   }
 
   canApprove(): boolean {
+    return ['ADMIN', 'MANAGER'].includes(this.role ?? '');
+  }
+
+  canReject(): boolean {
     return ['ADMIN', 'MANAGER'].includes(this.role ?? '');
   }
 

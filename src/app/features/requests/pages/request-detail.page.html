@@ -7,16 +7,18 @@
     </button>
 
     <div class="detail-header" *ngIf="!loading && request">
-      <div class="id-badge">#{{ request.code ?? request.id }}</div>
+      <div class="header-meta">
+        <div class="id-badge">#{{ request.code }}</div>
+        <span class="status-date">
+          {{ request.createdAt | date:'short' }}
+        </span>
+      </div>
+
       <h1>{{ request.title }}</h1>
 
       <div class="status-section">
         <span class="status-badge large" [ngClass]="request.status.toLowerCase()">
           {{ request.status }}
-        </span>
-
-        <span class="status-date">
-          {{ request.createdAt | date:'short' }}
         </span>
       </div>
     </div>
@@ -29,23 +31,23 @@
 
   <div *ngIf="!loading && request" class="detail-content">
     <section class="info-section">
-      <div class="info-card">
-        <div class="info-label">Descripción</div>
-        <div class="info-value">{{ request.description }}</div>
-      </div>
-
       <div class="info-grid">
-        <div class="info-card">
+        <article class="info-card info-card--wide">
+          <div class="info-label">Descripción</div>
+          <div class="info-value">{{ request.description }}</div>
+        </article>
+
+        <article class="info-card">
           <div class="info-label">Creador</div>
           <div class="info-value">{{ request.creator || 'No disponible' }}</div>
-        </div>
+        </article>
 
-        <div class="info-card">
+        <article class="info-card">
           <div class="info-label">Asignado</div>
           <div class="info-value">{{ request.assignee || 'Sin asignar' }}</div>
-        </div>
+        </article>
 
-        <div class="info-card">
+        <article class="info-card">
           <div class="info-label">Prioridad</div>
           <div class="info-value">
             <span class="priority-badge" *ngIf="request.priority; else noPriority">
@@ -55,9 +57,9 @@
               <span class="empty-text">Sin especificar</span>
             </ng-template>
           </div>
-        </div>
+        </article>
 
-        <div class="info-card">
+        <article class="info-card">
           <div class="info-label">Tipo</div>
           <div class="info-value">
             <span class="type-badge" *ngIf="request.type; else noType">
@@ -67,12 +69,12 @@
               <span class="empty-text">Sin especificar</span>
             </ng-template>
           </div>
-        </div>
+        </article>
 
-        <div class="info-card">
+        <article class="info-card">
           <div class="info-label">Fecha de creación</div>
           <div class="info-value">{{ request.createdAt | date:'medium' }}</div>
-        </div>
+        </article>
       </div>
     </section>
 

@@ -1,8 +1,19 @@
-.page-shell {
-  min-height: calc(100vh - 72px);
+:host {
+  display: block;
+  min-height: 100vh;
   background:
     radial-gradient(circle at top right, rgba(1, 105, 111, 0.08), transparent 18rem),
     linear-gradient(180deg, var(--color-background, #f6f8fb) 0%, #eef2f7 100%);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.page-shell {
+  min-height: 100vh;
 }
 
 .page-container {
@@ -65,10 +76,18 @@
   padding: 1.5rem;
 }
 
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .label-row {
@@ -76,6 +95,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .form-group label {
@@ -88,18 +108,25 @@
   color: var(--color-text-secondary, #667085);
   font-size: 0.82rem;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--color-border, #d0d5dd);
   border-radius: 0.85rem;
   background: #fff;
   color: var(--color-text, #101828);
   padding: 0.9rem 1rem;
   font: inherit;
+  line-height: 1.4;
   outline: none;
+  appearance: none;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -113,13 +140,15 @@
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
   border-color: var(--color-primary, #01696f);
   box-shadow: 0 0 0 4px rgba(1, 105, 111, 0.12);
 }
 
 .form-group input:disabled,
-.form-group textarea:disabled {
+.form-group textarea:disabled,
+.form-group select:disabled {
   background: #f8fafc;
   color: #98a2b3;
   cursor: not-allowed;
@@ -128,6 +157,18 @@
 .form-group textarea {
   resize: vertical;
   min-height: 170px;
+}
+
+.form-group select {
+  padding-right: 2.75rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #667085 50%),
+    linear-gradient(135deg, #667085 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
 }
 
 .help-text {
@@ -232,7 +273,7 @@
   background: #0b5c60;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .page-container {
     padding: 1.5rem 0.9rem 2rem;
   }
@@ -241,14 +282,17 @@
     margin-bottom: 1.25rem;
   }
 
-  .form-section,
-  .form-actions {
-    padding-left: 1rem;
-    padding-right: 1rem;
+  .form-section {
+    padding: 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 
   .form-actions {
     flex-direction: column-reverse;
+    padding: 1rem;
   }
 
   .btn {

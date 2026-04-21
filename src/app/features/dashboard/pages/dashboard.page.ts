@@ -1,7 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
-
+import { provideRouter } from '@angular/router';
 import { HeaderComponent } from '../../../core/layout/header.component';
 import { DashboardService } from '../services/dashboard.service';
 import { DashboardSummary } from '../models/dashboard-summary.model';
@@ -15,14 +15,23 @@ import { DashboardSummary } from '../models/dashboard-summary.model';
 })
 export class DashboardPage implements OnInit {
   loading = false;
-  summary!: DashboardSummary;
+
+  summary: DashboardSummary = {
+    totalRequests: 0,
+    draft: 0,
+    pendingValidation: 0,
+    validated: 0,
+    approved: 0,
+    inProgress: 0,
+    completed: 0,
+    failed: 0,
+    rejected: 0,
+    cancelled: 0,
+  };
 
   cards: { label: string; value: number; className: string }[] = [];
 
-  constructor(
-    private dashboardService: DashboardService,
-    private cdr: ChangeDetectorRef
-  ) {}
+  constructor(private dashboardService: DashboardService) {}
 
   ngOnInit(): void {
     this.loadSummary();
@@ -34,10 +43,23 @@ export class DashboardPage implements OnInit {
     this.dashboardService.getSummary()
       .pipe(finalize(() => {
         this.loading = false;
-        this.cdr.detectChanges();
       }))
       .subscribe({
-        next: (data: DashboardSummary) => {
+        next: (raw: any) => {
+
+          const data: DashboardSummary = {
+            totalRequests: raw.total ?? 0,
+            draft: raw.draft ?? 0,
+            pendingValidation: raw.pending ?? 0,
+            validated: raw.validated ?? 0,
+            approved: raw.approved ?? 0,
+            inProgress: raw.inProgress ?? 0,
+            completed: raw.completed ?? 0,
+            failed: raw.failed ?? 0,
+            rejected: raw.rejected ?? 0,
+            cancelled: raw.cancelled ?? 0,
+          };
+
           this.summary = data;
           this.cards = [
             { label: 'Total', value: data.totalRequests, className: 'total' },
@@ -51,10 +73,10 @@ export class DashboardPage implements OnInit {
             { label: 'Rejected', value: data.rejected, className: 'rejected' },
             { label: 'Cancelled', value: data.cancelled, className: 'cancelled' },
           ];
-          this.cdr.detectChanges();
         },
         error: (err: unknown) => {
           console.error('Error cargando dashboard', err);
+          this.cards = [];
         },
       });
   }

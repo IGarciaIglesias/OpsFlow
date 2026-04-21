@@ -106,8 +106,8 @@ export class RequestDetailPage implements OnInit {
       });
   }
 
-  trackHistory(index: number, item: any): string | number {
-    return item.id ?? item.changedAt ?? index;
+  trackHistory(index: number, item: RequestHistoryItem): string | number {
+    return item.changedAt ?? index;
   }
 
   canSubmit(): boolean {

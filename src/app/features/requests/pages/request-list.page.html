@@ -28,8 +28,8 @@
           [value]="selectedStatus"
           (change)="onStatusChange($any($event.target).value)">
           <option value="">Todos</option>
-          <option *ngFor="let status of availableStatuses" [value]="status">
-            {{ status }}
+          <option *ngFor="let status of availableStatuses" [value]="status.code">
+            {{ status.description }}
           </option>
         </select>
       </div>
@@ -64,9 +64,14 @@
         <table class="requests-table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>Código</th>
               <th>Estado</th>
               <th>Título</th>
+              <th>Prioridad</th>
+              <th>Tipo</th>
+              <th>Creador</th>
+              <th>Asignado</th>
+              <th>Fecha</th>
               <th class="actions-col">Acciones</th>
             </tr>
           </thead>
@@ -75,7 +80,7 @@
             <tr *ngFor="let r of requests">
               <td>
                 <a class="request-link" [routerLink]="['/requests', r.id]">
-                  #{{ r.id }}
+                  {{ r.code }}
                 </a>
               </td>
 
@@ -91,11 +96,28 @@
                 </div>
               </td>
 
+              <td>
+                <span class="priority-badge" [ngClass]="(r.priority || '').toLowerCase()">
+                  {{ r.priority || '—' }}
+                </span>
+              </td>
+
+              <td>
+                <span class="type-badge">
+                  {{ r.type || '—' }}
+                </span>
+              </td>
+
+              <td>{{ r.creator || '—' }}</td>
+              <td>{{ r.assignee || 'Sin asignar' }}</td>
+              <td>{{ r.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+
               <td class="actions">
                 <button
                   *ngIf="r.status === 'DRAFT'"
                   class="btn btn-warning"
                   type="button"
+                  [disabled]="actionBusyId === r.id"
                   (click)="submit(r.id)">
                   Enviar
                 </button>
@@ -104,14 +126,16 @@
                   *ngIf="r.status === 'VALIDATED' && canApprove()"
                   class="btn btn-success"
                   type="button"
+                  [disabled]="actionBusyId === r.id"
                   (click)="approve(r.id)">
                   Aprobar
                 </button>
 
                 <button
-                  *ngIf="r.status === 'PENDING_VALIDATION' || r.status === 'VALIDATED'"
+                  *ngIf="(r.status === 'PENDING_VALIDATION' || r.status === 'VALIDATED') && canReject()"
                   class="btn btn-danger"
                   type="button"
+                  [disabled]="actionBusyId === r.id"
                   (click)="reject(r.id)">
                   Rechazar
                 </button>
@@ -120,6 +144,7 @@
                   *ngIf="r.status === 'REJECTED' || r.status === 'FAILED'"
                   class="btn btn-warning"
                   type="button"
+                  [disabled]="actionBusyId === r.id"
                   (click)="retry(r.id)">
                   Reintentar
                 </button>
@@ -128,6 +153,7 @@
                   *ngIf="r.status !== 'COMPLETED' && r.status !== 'CANCELLED' && canApprove()"
                   class="btn btn-secondary"
                   type="button"
+                  [disabled]="actionBusyId === r.id"
                   (click)="cancel(r.id)">
                   Cancelar
                 </button>
