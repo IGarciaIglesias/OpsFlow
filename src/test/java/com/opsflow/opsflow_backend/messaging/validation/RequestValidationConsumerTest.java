@@ -93,7 +93,7 @@ class RequestValidationConsumerTest {
     }
 
     @Test
-    void whenDescriptionIsOnlyNoise_movesToFailedAndSavesHistory() {
+    void whenDescriptionIsOnlyNoise_movesToRejectedAndSavesHistory() {
         Request r = new Request("Titulo OK", "!!!");
         setStatus(r, RequestStatus.PENDING);
 
@@ -102,7 +102,7 @@ class RequestValidationConsumerTest {
 
         consumer.consume(RequestValidationMessage.of(3L, "msg-4", "corr-4"));
 
-        assertEquals(RequestStatus.FAILED, r.getStatus());
+        assertEquals(RequestStatus.REJECTED, r.getStatus());
         verify(requestRepository).save(r);
 
         ArgumentCaptor<RequestHistory> captor = ArgumentCaptor.forClass(RequestHistory.class);
@@ -110,7 +110,7 @@ class RequestValidationConsumerTest {
 
         RequestHistory savedHistory = captor.getValue();
         assertEquals(RequestStatus.PENDING, savedHistory.getFromStatus());
-        assertEquals(RequestStatus.FAILED, savedHistory.getToStatus());
+        assertEquals(RequestStatus.REJECTED, savedHistory.getToStatus());
     }
 
     @Test
